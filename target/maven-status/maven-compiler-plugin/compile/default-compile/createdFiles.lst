@@ -1,2 +1,5 @@
-com/zchess/controller/HomeController.class
 com/zchess/ZchessApplication.class
+com/zchess/controller/HomeController.class
+com/zchess/entity/User.class
+com/zchess/entity/Game.class
+com/zchess/entity/Move.class

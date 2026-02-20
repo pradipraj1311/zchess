@@ -1,2 +1,6 @@
 /workspaces/zchess/src/main/java/com/zchess/ZchessApplication.java
+/workspaces/zchess/src/main/java/com/zchess/entity/Game.java
 /workspaces/zchess/src/main/java/com/zchess/HomeController.java
+/workspaces/zchess/src/main/java/com/zchess/controller/HomeController.java
+/workspaces/zchess/src/main/java/com/zchess/entity/Move.java
+/workspaces/zchess/src/main/java/com/zchess/entity/User.java
