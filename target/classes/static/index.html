@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>ZChess</title>
+<style>
+  body{font-family:Arial;text-align:center;background:#eee}
+    h2{margin:12px 0}
+      table{border-collapse:collapse;margin:10px auto}
+        td{width:72px;height:72px;vertical-align:middle;text-align:center}
+          .light{background:#f0d9b5}
+            .dark{background:#769656}
+              .sel{outline:3px solid #e53935}
+                .hint{box-shadow:inset 0 0 0 3px rgba(30,144,255,.6)}
+                  svg{width:58px;height:58px}
+                  </style>
+                  </head>
+                  <body>
+
+                  <h2>ZChess</h2>
+                  <div id="turn">Turn: WHITE</div>
+                  <table id="board"></table>
+
+                  <script>
+                  // ---------- PIECE SVGs (clean 2D set) ----------
+                  function svgPiece(code){
+                    const isWhite = code[0]==='w';
+                      const fill = isWhite ? '#fff' : '#111';
+                        const stroke = '#111';
+                          const common = `fill="${fill}" stroke="${stroke}" stroke-width="1.5"`;
+                            const map = {
+                                p:`<circle cx="22.5" cy="18" r="6" ${common}/>
+                                       <path d="M12 34h21l-2 7H14z" ${common}/>`,
+                                           r:`<rect x="13" y="16" width="19" height="8" ${common}/>
+                                                  <rect x="14" y="24" width="17" height="12" ${common}/>
+                                                         <rect x="12" y="36" width="21" height="6" ${common}/>`,
+                                                             n:`<path d="M15 34c0-10 10-14 10-14l6 4-3 6 4 4-6 2-6-2z" ${common}/>`,
+                                                                 b:`<path d="M22.5 12l5 7-5 7-5-7z" ${common}/>
+                                                                        <rect x="16" y="26" width="13" height="12" ${common}/>
+                                                                               <rect x="14" y="38" width="17" height="6" ${common}/>`,
+                                                                                   q:`<path d="M12 18l5-6 5 6 5-6 5 6-3 16H15z" ${common}/>
+                                                                                          <rect x="14" y="36" width="17" height="6" ${common}/>`,
+                                                                                              k:`<path d="M22.5 10v8M18.5 14h8" stroke="${stroke}" stroke-width="2"/>
+                                                                                                     <rect x="16" y="20" width="13" height="14" ${common}/>
+                                                                                                            <rect x="14" y="34" width="17" height="6" ${common}/>`
+                                                                                                              };
+                                                                                                                const body = map[code[1]];
+                                                                                                                  return `<svg viewBox="0 0 45 45">${body}</svg>`;
+                                                                                                                  }
+
+                                                                                                                  // ---------- BOARD STATE ----------
+                                                                                                                  let turn = 'w'; // 'w' or 'b'
+                                                                                                                  const initial = [
+                                                                                                                    ['br','bn','bb','bq','bk','bb','bn','br'],
+                                                                                                                      ['bp','bp','bp','bp','bp','bp','bp','bp'],
+                                                                                                                        ['','','','','','','',''],
+                                                                                                                          ['','','','','','','',''],
+                                                                                                                            ['','','','','','','',''],
+                                                                                                                              ['','','','','','','',''],
+                                                                                                                                ['wp','wp','wp','wp','wp','wp','wp','wp'],
+                                                                                                                                  ['wr','wn','wb','wq','wk','wb','wn','wr']
+                                                                                                                                  ];
+                                                                                                                                  let board = JSON.parse(JSON.stringify(initial));
+                                                                                                                                  let selected = null;
+                                                                                                                                  const elBoard = document.getElementById('board');
+                                                                                                                                  const elTurn  = document.getElementById('turn');
+
+                                                                                                                                  // ---------- RENDER ----------
+                                                                                                                                  function draw(){
+                                                                                                                                    elBoard.innerHTML='';
+                                                                                                                                      for(let r=0;r<8;r++){
+                                                                                                                                          const tr=document.createElement('tr');
+                                                                                                                                              for(let c=0;c<8;c++){
+                                                                                                                                                    const td=document.createElement('td');
+                                                                                                                                                          td.className=((r+c)%2?'dark':'light');
+                                                                                                                                                                td.dataset.r=r; td.dataset.c=c;
+                                                                                                                                                                      const p=board[r][c];
+                                                                                                                                                                            if(p) td.innerHTML = svgPiece(p);
+                                                                                                                                                                                  if(selected && selected.r==r && selected.c==c) td.classList.add('sel');
+                                                                                                                                                                                        td.onclick=()=>clickCell(r,c,td);
+                                                                                                                                                                                              tr.appendChild(td);
+                                                                                                                                                                                                  }
+                                                                                                                                                                                                      elBoard.appendChild(tr);
+                                                                                                                                                                                                        }
+                                                                                                                                                                                                          elTurn.textContent = `Turn: ${turn==='w'?'WHITE':'BLACK'}`;
+                                                                                                                                                                                                          }
+
+                                                                                                                                                                                                          // ---------- MOVE RULES ----------
+                                                                                                                                                                                                          function inside(r,c){return r>=0&&r<8&&c>=0&&c<8;}
+                                                                                                                                                                                                          function colorOf(p){return p? p[0] : null;}
+                                                                                                                                                                                                          function typeOf(p){return p? p[1] : null;}
+
+                                                                                                                                                                                                          function pathClear(r1,c1,r2,c2){
+                                                                                                                                                                                                            const dr = Math.sign(r2-r1);
+                                                                                                                                                                                                              const dc = Math.sign(c2-c1);
+                                                                                                                                                                                                                let r=r1+dr, c=c1+dc;
+                                                                                                                                                                                                                  while(r!==r2 || c!==c2){
+                                                                                                                                                                                                                      if(board[r][c]) return false;
+                                                                                                                                                                                                                          r+=dr; c+=dc;
+                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                              return true;
+                                                                                                                                                                                                                              }
+
+                                                                                                                                                                                                                              function legal(fromR,fromC,toR,toC){
+                                                                                                                                                                                                                                if(fromR===toR && fromC===toC) return false;
+                                                                                                                                                                                                                                  const p = board[fromR][fromC];
+                                                                                                                                                                                                                                    const t = board[toR][toC];
+                                                                                                                                                                                                                                      if(!p) return false;
+                                                                                                                                                                                                                                        if(colorOf(p)!==turn) return false;
+                                                                                                                                                                                                                                          if(t && colorOf(t)===turn) return false;
+
+                                                                                                                                                                                                                                            const type = typeOf(p);
+                                                                                                                                                                                                                                              const dr = toR-fromR, dc = toC-fromC;
+                                                                                                                                                                                                                                                const adr=Math.abs(dr), adc=Math.abs(dc);
+
+                                                                                                                                                                                                                                                  if(type==='p'){
+                                                                                                                                                                                                                                                      const dir = (turn==='w') ? -1 : 1;
+                                                                                                                                                                                                                                                          const startRow = (turn==='w') ? 6 : 1;
+                                                                                                                                                                                                                                                              // forward
+                                                                                                                                                                                                                                                                  if(dc===0 && !t){
+                                                                                                                                                                                                                                                                        if(dr===dir) return true;
+                                                                                                                                                                                                                                                                              if(fromR===startRow && dr===2*dir && !board[fromR+dir][fromC]) return true;
+                                                                                                                                                                                                                                                                                  }
+                                                                                                                                                                                                                                                                                      // capture
+                                                                                                                                                                                                                                                                                          if(adr===1 && dr===dir && t && colorOf(t)!==turn) return true;
+                                                                                                                                                                                                                                                                                              return false;
+                                                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                                                  if(type==='r'){
+                                                                                                                                                                                                                                                                                                      if(fromR===toR || fromC===toC) return pathClear(fromR,fromC,toR,toC);
+                                                                                                                                                                                                                                                                                                          return false;
+                                                                                                                                                                                                                                                                                                            }
+
+                                                                                                                                                                                                                                                                                                              if(type==='b'){
+                                                                                                                                                                                                                                                                                                                  if(adr===adc) return pathClear(fromR,fromC,toR,toC);
+                                                                                                                                                                                                                                                                                                                      return false;
+                                                                                                                                                                                                                                                                                                                        }
+
+                                                                                                                                                                                                                                                                                                                          if(type==='q'){
+                                                                                                                                                                                                                                                                                                                              if(fromR===toR || fromC===toC || adr===adc)
+                                                                                                                                                                                                                                                                                                                                    return pathClear(fromR,fromC,toR,toC);
+                                                                                                                                                                                                                                                                                                                                        return false;
+                                                                                                                                                                                                                                                                                                                                          }
+
+                                                                                                                                                                                                                                                                                                                                            if(type==='n'){
+                                                                                                                                                                                                                                                                                                                                                return (adr===2 && adc===1) || (adr===1 && adc===2);
+                                                                                                                                                                                                                                                                                                                                                  }
+
+                                                                                                                                                                                                                                                                                                                                                    if(type==='k'){
+                                                                                                                                                                                                                                                                                                                                                        return adr<=1 && adc<=1;
+                                                                                                                                                                                                                                                                                                                                                          }
+
+                                                                                                                                                                                                                                                                                                                                                            return false;
+                                                                                                                                                                                                                                                                                                                                                            }
+
+                                                                                                                                                                                                                                                                                                                                                            // ---------- INTERACTION ----------
+                                                                                                                                                                                                                                                                                                                                                            function clickCell(r,c,td){
+                                                                                                                                                                                                                                                                                                                                                              const p = board[r][c];
+                                                                                                                                                                                                                                                                                                                                                                if(!selected){
+                                                                                                                                                                                                                                                                                                                                                                    if(p && colorOf(p)===turn){
+                                                                                                                                                                                                                                                                                                                                                                          selected={r,c};
+                                                                                                                                                                                                                                                                                                                                                                                draw();
+                                                                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                                                                                        return;
+                                                                                                                                                                                                                                                                                                                                                                                          }
+                                                                                                                                                                                                                                                                                                                                                                                            // try move
+                                                                                                                                                                                                                                                                                                                                                                                              if(legal(selected.r,selected.c,r,c)){
+                                                                                                                                                                                                                                                                                                                                                                                                  board[r][c] = board[selected.r][selected.c];
+                                                                                                                                                                                                                                                                                                                                                                                                      board[selected.r][selected.c] = '';
+                                                                                                                                                                                                                                                                                                                                                                                                          turn = (turn==='w') ? 'b' : 'w';
+                                                                                                                                                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                                                                                                                                                              selected=null;
+                                                                                                                                                                                                                                                                                                                                                                                                                draw();
+                                                                                                                                                                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                draw();
+                                                                                                                                                                                                                                                                                                                                                                                                                </script>
+                                                                                                                                                                                                                                                                                                                                                                                                                </body>
+                                                                                                                                                                                                                                                                                                                                                                                                                </html>
