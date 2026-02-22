@@ -1,33 +1,76 @@
 package com.zchess.controller;
 
 import org.springframework.web.bind.annotation.*;
-import com.zchess.repository.*;
-import com.zchess.entity.*;
+import com.zchess.entity.Game;
+import com.zchess.repository.GameRepository;
 
 @RestController
-@RequestMapping("/api/games")
+@RequestMapping("/api/game")
+@CrossOrigin
 public class GameController {
 
-    private final GameRepository gameRepository;
-        private final UserRepository userRepository;
+    private final GameRepository repo;
 
-            public GameController(GameRepository gameRepository, UserRepository userRepository) {
-                    this.gameRepository = gameRepository;
-                            this.userRepository = userRepository;
-                                }
+        public GameController(GameRepository repo){
+                this.repo = repo;
+                    }
 
-                                    @GetMapping("/create/{userId}")
-                                        public Game createGame(@PathVariable Long userId) {
-                                                User user = userRepository.findById(userId).orElseThrow();
-                                                        Game game = new Game();
-                                                                game.setUser(user);
-                                                                        game.setStatus("IN_PROGRESS");
-                                                                                game.setResult("NONE");
-                                                                                        return gameRepository.save(game);
-                                                                                            }
+                        // CREATE GAME
+                            @GetMapping("/create")
+                                public Game createGame(){
 
-                                                                                                @GetMapping("/{id}")
-                                                                                                    public Game getGame(@PathVariable Long id){
-                                                                                                            return gameRepository.findById(id).orElse(null);
-                                                                                                                }
-                                                                                                                }
+                                        Game g = new Game();
+
+                                                g.setCurrentTurn("white");
+                                                        g.setBoardState(
+                                                                    "bR,bN,bB,bQ,bK,bB,bN,bR;" +
+                                                                                "bP,bP,bP,bP,bP,bP,bP,bP;" +
+                                                                                            ".,.,.,.,.,.,.,.;" +
+                                                                                                        ".,.,.,.,.,.,.,.;" +
+                                                                                                                    ".,.,.,.,.,.,.,.;" +
+                                                                                                                                ".,.,.,.,.,.,.,.;" +
+                                                                                                                                            "wP,wP,wP,wP,wP,wP,wP,wP;" +
+                                                                                                                                                        "wR,wN,wB,wQ,wK,wB,wN,wR"
+                                                                                                                                                                );
+
+                                                                                                                                                                        return repo.save(g);
+                                                                                                                                                                            }
+
+                                                                                                                                                                                // GET GAME
+                                                                                                                                                                                    @GetMapping("/{id}")
+                                                                                                                                                                                        public Game getGame(@PathVariable Long id){
+                                                                                                                                                                                                return repo.findById(id).orElse(null);
+                                                                                                                                                                                                    }
+
+                                                                                                                                                                                                        // MOVE
+                                                                                                                                                                                                            @PostMapping("/move")
+                                                                                                                                                                                                                public Game move(
+                                                                                                                                                                                                                        @RequestParam int fromRow,
+                                                                                                                                                                                                                                @RequestParam int fromCol,
+                                                                                                                                                                                                                                        @RequestParam int toRow,
+                                                                                                                                                                                                                                                @RequestParam int toCol
+                                                                                                                                                                                                                                                    ){
+
+                                                                                                                                                                                                                                                            Game g = repo.findById(1L).orElse(null);
+
+                                                                                                                                                                                                                                                                    String[] rows = g.getBoardState().split(";");
+                                                                                                                                                                                                                                                                            String[][] board = new String[8][8];
+
+                                                                                                                                                                                                                                                                                    for(int i=0;i<8;i++){
+                                                                                                                                                                                                                                                                                                board[i] = rows[i].split(",");
+                                                                                                                                                                                                                                                                                                        }
+
+                                                                                                                                                                                                                                                                                                                String piece = board[fromRow][fromCol];
+                                                                                                                                                                                                                                                                                                                        board[fromRow][fromCol] = ".";
+                                                                                                                                                                                                                                                                                                                                board[toRow][toCol] = piece;
+
+                                                                                                                                                                                                                                                                                                                                        String newBoard = "";
+                                                                                                                                                                                                                                                                                                                                                for(int i=0;i<8;i++){
+                                                                                                                                                                                                                                                                                                                                                            newBoard += String.join(",", board[i]);
+                                                                                                                                                                                                                                                                                                                                                                        if(i<7) newBoard += ";";
+                                                                                                                                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                                                                                                                                        g.setBoardState(newBoard);
+                                                                                                                                                                                                                                                                                                                                                                                                return repo.save(g);
+                                                                                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                                                                                                    }

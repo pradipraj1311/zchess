@@ -9,21 +9,32 @@ public class Game {
         @GeneratedValue(strategy = GenerationType.IDENTITY)
             private Long id;
 
-                private String status;
-                    private String result;
+                private String currentTurn;
 
-                        @ManyToOne
-                            @JoinColumn(name="user_id")
-                                private User user;
+                    @Column(length = 500)
+                        private String boardState;
 
-                                    public Long getId() { return id; }
+                            // ===== GETTERS =====
 
-                                        public String getStatus() { return status; }
-                                            public void setStatus(String status) { this.status = status; }
+                                public Long getId() {
+                                        return id;
+                                            }
 
-                                                public String getResult() { return result; }
-                                                    public void setResult(String result) { this.result = result; }
-
-                                                        public User getUser() { return user; }
-                                                            public void setUser(User user) { this.user = user; }
+                                                public String getCurrentTurn() {
+                                                        return currentTurn;
                                                             }
+
+                                                                public String getBoardState() {
+                                                                        return boardState;
+                                                                            }
+
+                                                                                // ===== SETTERS =====
+
+                                                                                    public void setCurrentTurn(String currentTurn) {
+                                                                                            this.currentTurn = currentTurn;
+                                                                                                }
+
+                                                                                                    public void setBoardState(String boardState) {
+                                                                                                            this.boardState = boardState;
+                                                                                                                }
+                                                                                                                }
