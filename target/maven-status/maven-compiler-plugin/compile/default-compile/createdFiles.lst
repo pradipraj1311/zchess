@@ -1,4 +1,5 @@
 com/zchess/repository/UserRepository.class
+com/zchess/service/ChessService.class
 com/zchess/controller/GameController.class
 com/zchess/repository/MoveRepository.class
 com/zchess/controller/UserController.class
@@ -9,3 +10,4 @@ com/zchess/entity/User.class
 com/zchess/ZchessApplication.class
 com/zchess/controller/HomeController.class
 com/zchess/controller/MoveController.class
+com/zchess/service/GameService.class

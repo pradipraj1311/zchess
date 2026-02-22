@@ -1,51 +1,49 @@
 package com.zchess.controller;
 
+import com.zchess.entity.Game;
+import com.zchess.repository.GameRepository;
+import com.zchess.service.ChessService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import com.zchess.repository.*;
-import com.zchess.entity.*;
-
-import java.util.List;
 
 @RestController
-@RequestMapping("/api/moves")
+@RequestMapping("/api/move")
 public class MoveController {
 
-    private final MoveRepository moveRepository;
-        private final GameRepository gameRepository;
+    @Autowired
+        GameRepository gameRepo;
 
-            public MoveController(MoveRepository moveRepository, GameRepository gameRepository){
-                    this.moveRepository = moveRepository;
-                            this.gameRepository = gameRepository;
-                                }
+            @Autowired
+                ChessService chessService;
 
-                                    @GetMapping("/add/{gameId}/{notation}")
-                                        public Move addMove(@PathVariable Long gameId, @PathVariable String notation){
+                    @PostMapping("/{id}")
+                        public Game move(
+                                    @PathVariable Long id,
+                                                @RequestParam int from,
+                                                            @RequestParam int to
+                                                                ) {
 
-                                                Game game = gameRepository.findById(gameId).orElseThrow();
+                                                                        Game g = gameRepo.findById(id).orElseThrow();
 
-                                                        List<Move> moves = moveRepository.findAll()
-                                                                        .stream()
-                                                                                        .filter(m -> m.getGame().getId().equals(gameId))
-                                                                                                        .toList();
+                                                                                String[] board = g.getBoardState().split(",");
 
-                                                                                                                int moveNumber = moves.size() + 1;
+                                                                                        if (!chessService.isValidMove(board, from, to, g.getCurrentTurn()))
+                                                                                                    return g;
 
-                                                                                                                        String color = (moveNumber % 2 == 1) ? "WHITE" : "BLACK";
+                                                                                                            String piece = board[from];
+                                                                                                                    board[from] = ".";
+                                                                                                                            board[to] = piece;
 
-                                                                                                                                Move move = new Move();
-                                                                                                                                        move.setGame(game);
-                                                                                                                                                move.setMoveNumber(moveNumber);
-                                                                                                                                                        move.setPlayerColor(color);
-                                                                                                                                                                move.setMoveNotation(notation);
+                                                                                                                                    String turn = g.getCurrentTurn().equals("white") ? "black" : "white";
 
-                                                                                                                                                                        return moveRepository.save(move);
-                                                                                                                                                                            }
+                                                                                                                                            if (chessService.isKingInCheck(board, turn)) {
+                                                                                                                                                        System.out.println("King in check!");
+                                                                                                                                                                }
 
-                                                                                                                                                                                @GetMapping("/game/{gameId}")
-                                                                                                                                                                                    public List<Move> getMoves(@PathVariable Long gameId){
-                                                                                                                                                                                            return moveRepository.findAll()
-                                                                                                                                                                                                            .stream()
-                                                                                                                                                                                                                            .filter(m -> m.getGame().getId().equals(gameId))
-                                                                                                                                                                                                                                            .toList();
-                                                                                                                                                                                                                                                }
-                                                                                                                                                                                                                                                }
+                                                                                                                                                                        g.setCurrentTurn(turn);
+                                                                                                                                                                                g.setBoardState(String.join(",", board));
+
+                                                                                                                                                                                        gameRepo.save(g);
+                                                                                                                                                                                                return g;
+                                                                                                                                                                                                    }
+                                                                                                                                                                                                    }

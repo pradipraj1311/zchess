@@ -9,32 +9,29 @@ public class Game {
         @GeneratedValue(strategy = GenerationType.IDENTITY)
             private Long id;
 
-                private String currentTurn;
+                private String boardState;
 
-                    @Column(length = 500)
-                        private String boardState;
+                    private String currentTurn;
 
-                            // ===== GETTERS =====
+                        public Game() {}
 
-                                public Long getId() {
-                                        return id;
-                                            }
+                            public Long getId() {
+                                    return id;
+                                        }
 
-                                                public String getCurrentTurn() {
-                                                        return currentTurn;
-                                                            }
+                                            public String getBoardState() {
+                                                    return boardState;
+                                                        }
 
-                                                                public String getBoardState() {
-                                                                        return boardState;
-                                                                            }
+                                                            public void setBoardState(String boardState) {
+                                                                    this.boardState = boardState;
+                                                                        }
 
-                                                                                // ===== SETTERS =====
+                                                                            public String getCurrentTurn() {
+                                                                                    return currentTurn;
+                                                                                        }
 
-                                                                                    public void setCurrentTurn(String currentTurn) {
-                                                                                            this.currentTurn = currentTurn;
-                                                                                                }
-
-                                                                                                    public void setBoardState(String boardState) {
-                                                                                                            this.boardState = boardState;
-                                                                                                                }
-                                                                                                                }
+                                                                                            public void setCurrentTurn(String currentTurn) {
+                                                                                                    this.currentTurn = currentTurn;
+                                                                                                        }
+                                                                                                        }
