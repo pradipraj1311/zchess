@@ -2,43 +2,33 @@ package com.zchess.controller;
 
 import com.zchess.entity.Game;
 import com.zchess.repository.GameRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.zchess.service.ChessService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/game")
+@CrossOrigin
 public class GameController {
 
-    @Autowired
-        GameRepository gameRepo;
+    private final GameRepository repo;
+        private final ChessService chess;
 
-            // CREATE GAME
-                @PostMapping("/create")
-                    public Game createGame() {
+            public GameController(GameRepository repo, ChessService chess){
+                    this.repo = repo;
+                            this.chess = chess;
+                                }
 
-                            Game g = new Game();
+                                    @PostMapping("/create")
+                                        public Game create(){
+                                                Game g = new Game();
+                                                        g.setBoardState(chess.initialBoard());
+                                                                g.setCurrentTurn("white");
+                                                                        g.setMoveHistory(g.getBoardState());
+                                                                                return repo.save(g);
+                                                                                    }
 
-                                    String start =
-                                                    "br,bn,bb,bq,bk,bb,bn,br," +
-                                                                    "bp,bp,bp,bp,bp,bp,bp,bp," +
-                                                                                    ".,.,.,.,.,.,.,.," +
-                                                                                                    ".,.,.,.,.,.,.,.," +
-                                                                                                                    ".,.,.,.,.,.,.,.," +
-                                                                                                                                    ".,.,.,.,.,.,.,.," +
-                                                                                                                                                    "wp,wp,wp,wp,wp,wp,wp,wp," +
-                                                                                                                                                                    "wr,wn,wb,wq,wk,wb,wn,wr";
-
-                                                                                                                                                                            g.setBoardState(start);
-                                                                                                                                                                                    g.setCurrentTurn("white");
-
-                                                                                                                                                                                            gameRepo.save(g);
-                                                                                                                                                                                                    return g;
-                                                                                                                                                                                                        }
-
-                                                                                                                                                                                                            // GET GAME
-                                                                                                                                                                                                                @GetMapping("/{id}")
-                                                                                                                                                                                                                    public Game getGame(@PathVariable Long id) {
-                                                                                                                                                                                                                            return gameRepo.findById(id).orElseThrow();
-                                                                                                                                                                                                                                }
-                                                                                                                                                                                                                                }
-                                                
+                                                                                        @GetMapping("/{id}")
+                                                                                            public Game get(@PathVariable Long id){
+                                                                                                    return repo.findById(id).orElseThrow();
+                                                                                                        }
+                                                                                                        }

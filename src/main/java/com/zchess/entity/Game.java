@@ -9,29 +9,30 @@ public class Game {
         @GeneratedValue(strategy = GenerationType.IDENTITY)
             private Long id;
 
-                private String boardState;
+                @Column(length = 2000)
+                    private String boardState;
 
-                    private String currentTurn;
+                        private String currentTurn;
 
-                        public Game() {}
+                            @Column(length = 5000)
+                                private String moveHistory;
 
-                            public Long getId() {
-                                    return id;
-                                        }
+                                    private boolean checkmate;
 
-                                            public String getBoardState() {
-                                                    return boardState;
-                                                        }
+                                        public Game(){}
 
-                                                            public void setBoardState(String boardState) {
-                                                                    this.boardState = boardState;
-                                                                        }
+                                            public Long getId(){ return id; }
+                                                public void setId(Long id){ this.id=id; }
 
-                                                                            public String getCurrentTurn() {
-                                                                                    return currentTurn;
-                                                                                        }
+                                                    public String getBoardState(){ return boardState; }
+                                                        public void setBoardState(String boardState){ this.boardState=boardState; }
 
-                                                                                            public void setCurrentTurn(String currentTurn) {
-                                                                                                    this.currentTurn = currentTurn;
-                                                                                                        }
-                                                                                                        }
+                                                            public String getCurrentTurn(){ return currentTurn; }
+                                                                public void setCurrentTurn(String currentTurn){ this.currentTurn=currentTurn; }
+
+                                                                    public String getMoveHistory(){ return moveHistory; }
+                                                                        public void setMoveHistory(String moveHistory){ this.moveHistory=moveHistory; }
+
+                                                                            public boolean isCheckmate(){ return checkmate; }
+                                                                                public void setCheckmate(boolean checkmate){ this.checkmate=checkmate; }
+                                                                                }

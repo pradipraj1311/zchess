@@ -2,91 +2,86 @@
 <html>
 <head>
 <title>ZChess</title>
-
 <style>
 body{font-family:Arial;text-align:center}
-table{border-collapse:collapse;margin:auto}
+table{margin:auto;border-collapse:collapse}
 td{width:70px;height:70px}
 .light{background:#f0d9b5}
 .dark{background:#769656}
-img{width:60px;height:60px}
+img{width:60px}
+button{padding:10px;margin:10px}
 </style>
-
 </head>
 <body>
 
 <h1>ZChess</h1>
-
 <button onclick="createGame()">Create Game</button>
+<button onclick="undo()">Undo</button>
 <h3 id="turn"></h3>
 
 <table id="board"></table>
 
 <script>
-
 let gameId=1;
 let selected=null;
 
 function createGame(){
-// fetch("/api/game/create")
-fetch("/api/game/create",{
-      method:"POST"
-      })
-  .then(r=>r.json())
-   .then(d=>{
-      gameId=d.id;
-         loadBoard();
-          });
-          }
+fetch("/api/game/create",{method:"POST"})
+.then(r=>r.json())
+.then(g=>{
+gameId=g.id;
+load();
+});
+}
 
-          function loadBoard(){
-           fetch("/api/game/"+gameId)
-            .then(r=>r.json())
-             .then(d=>{
-                document.getElementById("turn").innerText="Turn: "+d.currentTurn;
+function load(){
+fetch("/api/game/"+gameId)
+.then(r=>r.json())
+.then(g=>{
+draw(g.boardState);
+document.getElementById("turn").innerText="Turn: "+g.currentTurn;
+});
+}
 
-                   let rows=d.boardState.split(",");
-                      let board=document.getElementById("board");
-                         board.innerHTML="";
+function draw(state){
+let arr=state.split(",");
+let html="";
+for(let r=0;r<8;r++){
+html+="<tr>";
+for(let c=0;c<8;c++){
+let i=r*8+c;
+let piece=arr[i];
+let color=(r+c)%2?"dark":"light";
+html+=`<td class="${color}" onclick="clickCell(${r},${c})">`;
+if(piece!="."){
+//html+=`<img src="/pieces/${piece}.svg">`;
+html+=`<img src="/pieces/${piece.toLowerCase()}.svg">`;
+}
+html+="</td>";
+}
+html+="</tr>";
+}
+document.getElementById("board").innerHTML=html;
+}
 
-                            for(let i=0;i<8;i++){
-                                let tr=document.createElement("tr");
+function clickCell(r,c){
+if(selected==null){
+selected=[r,c];
+}else{
+fetch(`/api/move/${gameId}?fr=${selected[0]}&fc=${selected[1]}&tr=${r}&tc=${c}`,{method:"POST"})
+.then(r=>r.json())
+.then(()=>load());
+selected=null;
+}
+}
 
-                                    for(let j=0;j<8;j++){
-                                          let idx=i*8+j;
-                                                let td=document.createElement("td");
-                                                      td.className=(i+j)%2==0?"light":"dark";
+function undo(){
+fetch("/api/move/undo/"+gameId,{method:"POST"})
+.then(()=>load());
+}
 
-                                                            let p=rows[idx];
-                                                                  if(p!="."){
-                                                                          let img=document.createElement("img");
-                                                                                  img.src="pieces/"+p+".svg";
-                                                                                          td.appendChild(img);
-                                                                                                }
+createGame();
+</script>
 
-                                                                                                      td.onclick=()=>clickCell(idx);
-                                                                                                            tr.appendChild(td);
-                                                                                                                }
-                                                                                                                    board.appendChild(tr);
-                                                                                                                       }
-                                                                                                                        });
-                                                                                                                        }
-
-                                                                                                                        function clickCell(i){
-                                                                                                                         if(selected==null){
-                                                                                                                            selected=i;
-                                                                                                                             }else{
-                                                                                                                                fetch("/api/move/"+gameId+"?from="+selected+"&to="+i,{
-                                                                                                                                     method:"POST"
-                                                                                                                                        }).then(()=>{
-                                                                                                                                             selected=null;
-                                                                                                                                                  loadBoard();
-                                                                                                                                                     });
-                                                                                                                                                      }
-                                                                                                                                                      }
-
-                                                                                                                                                      createGame();
-                                                                                                                                                      </script>
-
-                                                                                                                                                      </body>
-                                                                                                                                                      </html>
+</body>
+</html>
