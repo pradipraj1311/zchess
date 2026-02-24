@@ -1,34 +1,35 @@
 package com.zchess.controller;
 
 import com.zchess.entity.Game;
-import com.zchess.repository.GameRepository;
-import com.zchess.service.ChessService;
+import com.zchess.service.GameService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/game")
+@RequestMapping("/api")
 @CrossOrigin
 public class GameController {
 
-    private final GameRepository repo;
-        private final ChessService chess;
+    private final GameService service;
 
-            public GameController(GameRepository repo, ChessService chess){
-                    this.repo = repo;
-                            this.chess = chess;
-                                }
+        public GameController(GameService service) {
+                this.service = service;
+                    }
 
-                                    @PostMapping("/create")
-                                        public Game create(){
-                                                Game g = new Game();
-                                                        g.setBoardState(chess.initialBoard());
-                                                                g.setCurrentTurn("white");
-                                                                        g.setMoveHistory(g.getBoardState());
-                                                                                return repo.save(g);
-                                                                                    }
+                        @PostMapping("/create")
+                            public Game create() {
+                                    return service.createGame();
+                                        }
 
-                                                                                        @GetMapping("/{id}")
-                                                                                            public Game get(@PathVariable Long id){
-                                                                                                    return repo.findById(id).orElseThrow();
-                                                                                                        }
-                                                                                                        }
+                                            @PostMapping("/move/{id}")
+                                                public Game move(@PathVariable Long id,
+                                                                     @RequestParam String from,
+                                                                                          @RequestParam String to) {
+
+                                                                                                  return service.makeMove(id, from, to);
+                                                                                                      }
+
+                                                                                                          @GetMapping("/game/{id}")
+                                                                                                              public Game get(@PathVariable Long id) {
+                                                                                                                      return service.get(id);
+                                                                                                                          }
+                                                                                                                          }

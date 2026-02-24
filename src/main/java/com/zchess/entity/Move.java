@@ -10,16 +10,13 @@ public class Move {
             private Long id;
 
                 private Long gameId;
-                    private String fromPos;
-                        private String toPos;
-                            private String piece;
+                    private String moveText;
 
-                                public Move() {}
+                        public Long getId() { return id; }
+                            public Long getGameId() { return gameId; }
+                                public String getMoveText() { return moveText; }
 
-                                    public Move(Long gameId, String fromPos, String toPos, String piece) {
-                                            this.gameId = gameId;
-                                                    this.fromPos = fromPos;
-                                                            this.toPos = toPos;
-                                                                    this.piece = piece;
-                                                                        }
-                                                                        }
+                                    public void setId(Long id) { this.id = id; }
+                                        public void setGameId(Long gameId) { this.gameId = gameId; }
+                                            public void setMoveText(String moveText) { this.moveText = moveText; }
+                                            }

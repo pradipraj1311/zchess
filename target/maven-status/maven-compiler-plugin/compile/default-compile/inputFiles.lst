@@ -1,13 +1,11 @@
+/workspaces/zchess/src/main/java/com/zchess/ZchessApplication.java
 /workspaces/zchess/src/main/java/com/zchess/entity/Game.java
 /workspaces/zchess/src/main/java/com/zchess/controller/GameController.java
+/workspaces/zchess/src/main/java/com/zchess/service/GameService.java
 /workspaces/zchess/src/main/java/repository/MoveRepository.java
 /workspaces/zchess/src/main/java/repository/UserRepository.java
 /workspaces/zchess/src/main/java/com/zchess/controller/UserController.java
-/workspaces/zchess/src/main/java/com/zchess/entity/Move.java
-/workspaces/zchess/src/main/java/com/zchess/service/ChessService.java
-/workspaces/zchess/src/main/java/com/zchess/ZchessApplication.java
-/workspaces/zchess/src/main/java/com/zchess/controller/MoveController.java
-/workspaces/zchess/src/main/java/com/zchess/controller/HomeController.java
-/workspaces/zchess/src/main/java/com/zchess/service/GameService.java
 /workspaces/zchess/src/main/java/repository/GameRepository.java
+/workspaces/zchess/src/main/java/com/zchess/entity/Move.java
 /workspaces/zchess/src/main/java/com/zchess/entity/User.java
+/workspaces/zchess/src/main/java/com/zchess/service/ChessService.java

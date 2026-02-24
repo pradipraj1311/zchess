@@ -4,84 +4,69 @@
 <title>ZChess</title>
 <style>
 body{font-family:Arial;text-align:center}
-table{margin:auto;border-collapse:collapse}
-td{width:70px;height:70px}
-.light{background:#f0d9b5}
-.dark{background:#769656}
+.board{display:grid;grid-template-columns:repeat(8,70px);width:560px;margin:auto}
+.cell{width:70px;height:70px}
+.white{background:#f0d9b5}
+.black{background:#769656}
 img{width:60px}
-button{padding:10px;margin:10px}
 </style>
 </head>
 <body>
 
 <h1>ZChess</h1>
-<button onclick="createGame()">Create Game</button>
+<button onclick="create()">Create Game</button>
 <button onclick="undo()">Undo</button>
-<h3 id="turn"></h3>
-
-<table id="board"></table>
+<h2 id="turn"></h2>
+<div class="board" id="board"></div>
 
 <script>
 let gameId=1;
 let selected=null;
 
-function createGame(){
-fetch("/api/game/create",{method:"POST"})
-.then(r=>r.json())
-.then(g=>{
-gameId=g.id;
-load();
-});
-}
+function create(){
+ fetch("/api/create",{method:"POST"})
+  .then(r=>r.json())
+   .then(g=>{
+     gameId=g.id;
+       draw(g);
+        });
+        }
 
-function load(){
-fetch("/api/game/"+gameId)
-.then(r=>r.json())
-.then(g=>{
-draw(g.boardState);
-document.getElementById("turn").innerText="Turn: "+g.currentTurn;
-});
-}
+        function undo(){
+         fetch(`/api/undo/${gameId}`,{method:"POST"})
+          .then(r=>r.json()).then(draw);
+          }
 
-function draw(state){
-let arr=state.split(",");
-let html="";
-for(let r=0;r<8;r++){
-html+="<tr>";
-for(let c=0;c<8;c++){
-let i=r*8+c;
-let piece=arr[i];
-let color=(r+c)%2?"dark":"light";
-html+=`<td class="${color}" onclick="clickCell(${r},${c})">`;
-if(piece!="."){
-//html+=`<img src="/pieces/${piece}.svg">`;
-html+=`<img src="/pieces/${piece.toLowerCase()}.svg">`;
-}
-html+="</td>";
-}
-html+="</tr>";
-}
-document.getElementById("board").innerHTML=html;
-}
+          function move(to){
+           if(!selected){selected=to;return;}
 
-function clickCell(r,c){
-if(selected==null){
-selected=[r,c];
-}else{
-fetch(`/api/move/${gameId}?fr=${selected[0]}&fc=${selected[1]}&tr=${r}&tc=${c}`,{method:"POST"})
-.then(r=>r.json())
-.then(()=>load());
-selected=null;
-}
-}
+            let from=selected;
+             selected=null;
 
-function undo(){
-fetch("/api/move/undo/"+gameId,{method:"POST"})
-.then(()=>load());
-}
+              fetch(`/api/move/${gameId}?from=${from}&to=${to}`,{method:"POST"})
+               .then(r=>r.json()).then(draw);
+               }
 
-createGame();
-</script>
+               function draw(g){
+                document.getElementById("turn").innerText="Turn: "+g.currentTurn;
+                 let b=g.boardState.split(",");
+                  let html="";
 
-</body>
-</html>
+                   for(let i=0;i<64;i++){
+                     let c=(Math.floor(i/8)+i)%2==0?"white":"black";
+                       let pos=String.fromCharCode(97+(i%8))+(8-Math.floor(i/8));
+                         let p=b[i];
+
+                           html+=`<div class="cell ${c}" onclick="move('${pos}')">`;
+
+                             if(p!=".")
+                                 html+=`<img src="/pieces/${p}.svg">`;
+
+                                   html+="</div>";
+                                    }
+
+                                     document.getElementById("board").innerHTML=html;
+                                     }
+                                     </script>
+                                     </body>
+                                     </html>

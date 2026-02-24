@@ -1,172 +1,72 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
 <title>ZChess</title>
-
 <style>
-body{
-    font-family:Arial;
-        text-align:center;
-            background:#eee;
-            }
-            #board{
-                display:grid;
-                    grid-template-columns:repeat(8,70px);
-                        width:560px;
-                            margin:20px auto;
-                            }
-                            .square{
-                                width:70px;
-                                    height:70px;
-                                        display:flex;
-                                            align-items:center;
-                                                justify-content:center;
-                                                }
-                                                .light{ background:#f0d9b5; }
-                                                .dark{ background:#769656; }
+body{font-family:Arial;text-align:center}
+.board{display:grid;grid-template-columns:repeat(8,70px);width:560px;margin:auto}
+.cell{width:70px;height:70px}
+.white{background:#f0d9b5}
+.black{background:#769656}
+img{width:60px}
+</style>
+</head>
+<body>
 
-                                                .square img{
-                                                    width:55px;
-                                                        height:55px;
-                                                            cursor:pointer;
-                                                            }
-                                                            button{
-                                                                padding:10px 15px;
-                                                                    margin:5px;
-                                                                        font-size:16px;
-                                                                        }
-                                                                        </style>
-                                                                        </head>
+<h1>ZChess</h1>
+<button onclick="create()">Create Game</button>
+<button onclick="undo()">Undo</button>
+<h2 id="turn"></h2>
+<div class="board" id="board"></div>
 
-                                                                        <body>
+<script>
+let gameId=1;
+let selected=null;
 
-                                                                        <h1>ZChess</h1>
+function create(){
+ fetch("/api/create",{method:"POST"})
+  .then(r=>r.json())
+   .then(g=>{
+     gameId=g.id;
+       draw(g);
+        });
+        }
 
-                                                                        <button onclick="createGame()">Create Game</button>
-                                                                        <button onclick="undoMove()">Undo</button>
+        function undo(){
+         fetch(`/api/undo/${gameId}`,{method:"POST"})
+          .then(r=>r.json()).then(draw);
+          }
 
-                                                                        <h2 id="turn">Turn:</h2>
+          function move(to){
+           if(!selected){selected=to;return;}
 
-                                                                        <div id="board"></div>
+            let from=selected;
+             selected=null;
 
-                                                                        <script>
-                                                                        let gameId=null;
-                                                                        let selected=null;
-                                                                        let turnBeforeMove=null;
+              fetch(`/api/move/${gameId}?from=${from}&to=${to}`,{method:"POST"})
+               .then(r=>r.json()).then(draw);
+               }
 
-                                                                        /* =========================
-                                                                           CREATE GAME
-                                                                           ========================= */
-                                                                           function createGame(){
-                                                                               fetch("/game/create",{method:"POST"})
-                                                                                   .then(r=>r.json())
-                                                                                       .then(g=>{
-                                                                                               gameId=g.id;
-                                                                                                       load();
-                                                                                                           });
-                                                                                                           }
+               function draw(g){
+                document.getElementById("turn").innerText="Turn: "+g.currentTurn;
+                 let b=g.boardState.split(",");
+                  let html="";
 
-                                                                                                           /* =========================
-                                                                                                              LOAD BOARD
-                                                                                                              ========================= */
-                                                                                                              function load(){
-                                                                                                                  if(!gameId) return;
+                   for(let i=0;i<64;i++){
+                     let c=(Math.floor(i/8)+i)%2==0?"white":"black";
+                       let pos=String.fromCharCode(97+(i%8))+(8-Math.floor(i/8));
+                         let p=b[i];
 
-                                                                                                                      fetch("/game/"+gameId)
-                                                                                                                          .then(r=>r.json())
-                                                                                                                              .then(g=>{
-                                                                                                                                      drawBoard(g.boardState.split(","));
-                                                                                                                                              document.getElementById("turn").innerText="Turn: "+g.currentTurn;
-                                                                                                                                                  });
-                                                                                                                                                  }
+                           html+=`<div class="cell ${c}" onclick="move('${pos}')">`;
 
-                                                                                                                                                  /* =========================
-                                                                                                                                                     DRAW BOARD
-                                                                                                                                                     ========================= */
-                                                                                                                                                     function drawBoard(board){
+                             if(p!=".")
+                                 html+=`<img src="/pieces/${p}.svg">`;
 
-                                                                                                                                                         const el=document.getElementById("board");
-                                                                                                                                                             el.innerHTML="";
+                                   html+="</div>";
+                                    }
 
-                                                                                                                                                                 board.forEach((p,i)=>{
-
-                                                                                                                                                                         const sq=document.createElement("div");
-                                                                                                                                                                                 sq.className="square "+(((Math.floor(i/8)+i)%2)?"dark":"light");
-
-                                                                                                                                                                                         if(p!=="."){
-                                                                                                                                                                                                     const img=document.createElement("img");
-                                                                                                                                                                                                                 img.src="/pieces/"+p+".svg";
-                                                                                                                                                                                                                             sq.appendChild(img);
-                                                                                                                                                                                                                                     }
-
-                                                                                                                                                                                                                                             sq.onclick=()=>clickSquare(i);
-                                                                                                                                                                                                                                                     el.appendChild(sq);
-                                                                                                                                                                                                                                                         });
-                                                                                                                                                                                                                                                         }
-
-                                                                                                                                                                                                                                                         /* =========================
-                                                                                                                                                                                                                                                            CLICK
-                                                                                                                                                                                                                                                            ========================= */
-                                                                                                                                                                                                                                                            function clickSquare(i){
-
-                                                                                                                                                                                                                                                                if(selected===null){
-                                                                                                                                                                                                                                                                        selected=i;
-                                                                                                                                                                                                                                                                                return;
-                                                                                                                                                                                                                                                                                    }
-
-                                                                                                                                                                                                                                                                                        move(selected,i);
-                                                                                                                                                                                                                                                                                            selected=null;
-                                                                                                                                                                                                                                                                                            }
-
-                                                                                                                                                                                                                                                                                            /* =========================
-                                                                                                                                                                                                                                                                                               MOVE
-                                                                                                                                                                                                                                                                                               ========================= */
-                                                                                                                                                                                                                                                                                               function move(from,to){
-
-                                                                                                                                                                                                                                                                                                   if(!gameId) return;
-
-                                                                                                                                                                                                                                                                                                       fetch("/game/"+gameId)
-                                                                                                                                                                                                                                                                                                           .then(r=>r.json())
-                                                                                                                                                                                                                                                                                                               .then(g=>{
-                                                                                                                                                                                                                                                                                                                       turnBeforeMove=g.currentTurn;
-
-                                                                                                                                                                                                                                                                                                                               fetch(`/move/${gameId}?from=${from}&to=${to}`,{method:"POST"})
-                                                                                                                                                                                                                                                                                                                                       .then(r=>r.json())
-                                                                                                                                                                                                                                                                                                                                               .then(res=>{
-
-                                                                                                                                                                                                                                                                                                                                                           /* illegal move */
-                                                                                                                                                                                                                                                                                                                                                                       if(res.currentTurn===turnBeforeMove){
-                                                                                                                                                                                                                                                                                                                                                                                       alert("Illegal move");
-                                                                                                                                                                                                                                                                                                                                                                                                   }
-
-                                                                                                                                                                                                                                                                                                                                                                                                               /* checkmate */
-                                                                                                                                                                                                                                                                                                                                                                                                                           if(res.checkmate===true){
-                                                                                                                                                                                                                                                                                                                                                                                                                                           alert("CHECKMATE");
-                                                                                                                                                                                                                                                                                                                                                                                                                                                       }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                   /* check */
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                               if(res.check===true){
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               alert("CHECK");
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       load();
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               });
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   });
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   /* =========================
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      UNDO
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      ========================= */
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      function undoMove(){
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          if(!gameId) return;
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              fetch("/move/undo/"+gameId,{method:"POST"})
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  .then(()=>load());
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  </script>
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  </body>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  </html>
+                                     document.getElementById("board").innerHTML=html;
+                                     }
+                                     </script>
+                                     </body>
+                                     </html>
