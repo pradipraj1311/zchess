@@ -1,22 +1,23 @@
 package com.zchess.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Move {
 
     @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
             private Long id;
 
-                private Long gameId;
-                    private String moveText;
+                private int fromSquare;
+                    private int toSquare;
+                        private String notation;
 
-                        public Long getId() { return id; }
-                            public Long getGameId() { return gameId; }
-                                public String getMoveText() { return moveText; }
-
-                                    public void setId(Long id) { this.id = id; }
-                                        public void setGameId(Long gameId) { this.gameId = gameId; }
-                                            public void setMoveText(String moveText) { this.moveText = moveText; }
-                                            }
+                            @Enumerated(EnumType.STRING)
+                                private Color player;
+                                }

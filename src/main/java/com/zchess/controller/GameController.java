@@ -5,8 +5,7 @@ import com.zchess.service.GameService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api")
-@CrossOrigin
+@RequestMapping("/api/game")
 public class GameController {
 
     private final GameService service;
@@ -15,20 +14,20 @@ public class GameController {
                 this.service = service;
                     }
 
-                        @PostMapping("/create")
+                        @GetMapping("/create")
                             public Game create() {
-                                    return service.createGame();
+                                    return service.create();
                                         }
 
                                             @PostMapping("/move/{id}")
                                                 public Game move(@PathVariable Long id,
-                                                                     @RequestParam String from,
-                                                                                          @RequestParam String to) {
+                                                                     @RequestParam int from,
+                                                                                          @RequestParam int to) {
 
-                                                                                                  return service.makeMove(id, from, to);
+                                                                                                  return service.move(id, from, to);
                                                                                                       }
 
-                                                                                                          @GetMapping("/game/{id}")
+                                                                                                          @GetMapping("/{id}")
                                                                                                               public Game get(@PathVariable Long id) {
                                                                                                                       return service.get(id);
                                                                                                                           }

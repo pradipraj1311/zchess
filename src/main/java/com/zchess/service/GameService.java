@@ -1,65 +1,41 @@
 package com.zchess.service;
 
-import com.zchess.entity.Game;
+import com.zchess.entity.*;
 import com.zchess.repository.GameRepository;
+import com.zchess.service.engine.ChessEngine;
 import org.springframework.stereotype.Service;
 
 @Service
 public class GameService {
 
     private final GameRepository repo;
-        private final ChessService chess;
+        private final ChessEngine engine = new ChessEngine();
 
-            public GameService(GameRepository repo, ChessService chess){
+            public GameService(GameRepository repo) {
                     this.repo = repo;
-                            this.chess = chess;
-                                }
+                        }
 
-                                    // create new game
-                                        public Game createGame(){
+                            public Game create() {
 
-                                                Game g = new Game();
-                                                        g.setBoardState(chess.initialBoard());
-                                                                g.setCurrentTurn("white");
-                                                                        g.setCheckmate(false);
+                                    Game game = new Game();
 
-                                                                                repo.save(g);
-                                                                                        return g;
-                                                                                            }
+                                            // Initialize pieces properly (full board)
 
-                                                                                                // make move
-                                                                                                    public Game makeMove(Long id,String from,String to){
+                                                    repo.save(game);
+                                                            return game;
+                                                                }
 
-                                                                                                            Game g = repo.findById(id).orElseThrow();
+                                                                    public Game move(Long id, int from, int to) {
 
-                                                                                                                    String newBoard =
-                                                                                                                                    chess.tryMove(
-                                                                                                                                                            g.getBoardState(),
-                                                                                                                                                                                    from,
-                                                                                                                                                                                                            to,
-                                                                                                                                                                                                                                    g.getCurrentTurn()
-                                                                                                                                                                                                                                                    );
+                                                                            Game game = repo.findById(id)
+                                                                                            .orElseThrow();
 
-                                                                                                                                                                                                                                                            // illegal move → return same game
-                                                                                                                                                                                                                                                                    if(newBoard.equals(g.getBoardState()))
-                                                                                                                                                                                                                                                                                return g;
+                                                                                                    engine.executeMove(game, from, to);
 
-                                                                                                                                                                                                                                                                                        g.setBoardState(newBoard);
-                                                                                                                                                                                                                                                                                                g.setCurrentTurn(
-                                                                                                                                                                                                                                                                                                                g.getCurrentTurn().equals("white")
-                                                                                                                                                                                                                                                                                                                                        ? "black" : "white"
-                                                                                                                                                                                                                                                                                                                                                );
+                                                                                                            return repo.save(game);
+                                                                                                                }
 
-                                                                                                                                                                                                                                                                                                                                                        boolean mate =
-                                                                                                                                                                                                                                                                                                                                                                        chess.isCheckmate(newBoard, g.getCurrentTurn());
-
-                                                                                                                                                                                                                                                                                                                                                                                g.setCheckmate(mate);
-
-                                                                                                                                                                                                                                                                                                                                                                                        repo.save(g);
-                                                                                                                                                                                                                                                                                                                                                                                                return g;
-                                                                                                                                                                                                                                                                                                                                                                                                    }
-
-                                                                                                                                                                                                                                                                                                                                                                                                        public Game get(Long id){
-                                                                                                                                                                                                                                                                                                                                                                                                                return repo.findById(id).orElseThrow();
-                                                                                                                                                                                                                                                                                                                                                                                                                    }
-                                                                                                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                    public Game get(Long id) {
+                                                                                                                            return repo.findById(id).orElseThrow();
+                                                                                                                                }
+                                                                                                                                }
