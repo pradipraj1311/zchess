@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Game - ZChess</title>
+
+<style>
+body{
+    margin:0;
+        display:flex;
+            background:#1e1e1e;
+                color:white;
+                    font-family:Arial;
+                    }
+
+                    #board{
+                        display:grid;
+                            grid-template-columns: repeat(8,80px);
+                                margin:40px;
+                                }
+
+                                .square{
+                                    width:80px;
+                                        height:80px;
+                                            display:flex;
+                                                align-items:center;
+                                                    justify-content:center;
+                                                    }
+
+                                                    .light{ background:#f0d9b5; }
+                                                    .dark{ background:#b58863; }
+
+                                                    .side{
+                                                        width:250px;
+                                                            padding:20px;
+                                                                background:#121212;
+                                                                }
+
+                                                                img{ width:65px; }
+                                                                </style>
+                                                                </head>
+
+                                                                <body>
+
+                                                                <div id="board"></div>
+
+                                                                <div class="side">
+                                                                    <h3 id="turn">Turn: -</h3>
+                                                                        <button onclick="createGame()">New Game</button>
+                                                                        </div>
+
+                                                                        <script>
+                                                                            
+
+                                                                        function createGame(){
+                                                                            fetch("/api/game/create",{method:"POST"})
+                                                                                .then(res=>res.json())
+                                                                                    .then(data=>{
+                                                                                            document.getElementById("turn").innerText =
+                                                                                                        "Turn: "+data.currentTurn;
+                                                                                                                renderBoard(data.board);
+                                                                                                                    });
+                                                                                                                    }
+
+                                                                                                                    function renderBoard(boardString){
+
+                                                                                                                        const board=document.getElementById("board");
+                                                                                                                            board.innerHTML="";
+
+                                                                                                                                const squares=boardString.split(",");
+
+                                                                                                                                    for(let i=0;i<64;i++){
+
+                                                                                                                                            const square=document.createElement("div");
+                                                                                                                                                    square.classList.add("square");
+
+                                                                                                                                                            if((Math.floor(i/8)+i)%2===0)
+                                                                                                                                                                        square.classList.add("light");
+                                                                                                                                                                                else
+                                                                                                                                                                                            square.classList.add("dark");
+
+                                                                                                                                                                                                    const piece=squares[i];
+
+                                                                                                                                                                                                            if(piece!=="."){
+                                                                                                                                                                                                                        const img=document.createElement("img");
+                                                                                                                                                                                                                                    img.src="/pieces/"+piece+".svg";
+                                                                                                                                                                                                                                                square.appendChild(img);
+                                                                                                                                                                                                                                                        }
+
+                                                                                                                                                                                                                                                                board.appendChild(square);
+                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                    }
+
+                                                                                                                                                                                                                                                                    </script>
+
+                                                                                                                                                                                                                                                                    </body>
+                                                                                                                                                                                                                                                                    </html>
