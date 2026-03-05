@@ -2,7 +2,9 @@ package com.zchess.controller;
 
 import com.zchess.entity.Move;
 import com.zchess.service.MoveService;
+
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -16,17 +18,12 @@ public class MoveController {
                     }
 
                         @PostMapping
-                            public Move addMove(
-                                        @RequestParam Long gameId,
-                                                    @RequestParam String from,
-                                                                @RequestParam String to,
-                                                                            @RequestParam int moveNumber){
+                            public Move addMove(@RequestBody Move move){
+                                    return moveService.saveMove(move);
+                                        }
 
-                                                                                    return moveService.addMove(gameId,from,to,moveNumber);
-                                                                                        }
-
-                                                                                            @GetMapping("/game/{gameId}")
-                                                                                                public List<Move> getMoves(@PathVariable Long gameId){
-                                                                                                        return moveService.getMovesByGame(gameId);
-                                                                                                            }
-                                                                                                            }
+                                            @GetMapping("/game/{gameId}")
+                                                public List<Move> getMoves(@PathVariable Long gameId){
+                                                        return moveService.getMoves(gameId);
+                                                            }
+                                                            }

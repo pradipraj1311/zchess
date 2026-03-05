@@ -10,3 +10,4 @@ public class ZchessApplication {
             SpringApplication.run(ZchessApplication.class, args);
                 }
                 }
+                

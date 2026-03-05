@@ -11,44 +11,35 @@ public class Game {
         @GeneratedValue(strategy = GenerationType.IDENTITY)
             private Long id;
 
-                private String status; // ONGOING, FINISHED
-
-                    private String currentTurn;
-
+                private String status; // ACTIVE / FINISHED
+                    private String currentTurn; // WHITE / BLACK
                         private LocalDateTime createdAt;
 
                             @ManyToOne
-                                @JoinColumn(name = "user_id")
-                                    private User creator;
+                                private User user;
 
-                                        @OneToMany(mappedBy = "game", cascade = CascadeType.ALL)
-                                            private List<Move> moves;
+                                    @OneToMany(mappedBy = "game", cascade = CascadeType.ALL)
+                                        private List<Move> moves;
 
-                                                public Game() {
-                                                        this.createdAt = LocalDateTime.now();
-                                                                this.status = "ONGOING";
-                                                                        this.currentTurn = "WHITE";
-                                                                            }
+                                            public Game(){
+                                                    this.createdAt = LocalDateTime.now();
+                                                            this.status = "ACTIVE";
+                                                                    this.currentTurn = "WHITE";
+                                                                        }
 
-                                                                                // Getters and Setters
+                                                                            public Long getId(){ return id; }
 
-                                                                                    public Long getId() { return id; }
+                                                                                public String getStatus(){ return status; }
+                                                                                    public void setStatus(String status){ this.status = status; }
 
-                                                                                        public String getStatus() { return status; }
+                                                                                        public String getCurrentTurn(){ return currentTurn; }
+                                                                                            public void setCurrentTurn(String currentTurn){ this.currentTurn = currentTurn; }
 
-                                                                                            public void setStatus(String status) { this.status = status; }
+                                                                                                public LocalDateTime getCreatedAt(){ return createdAt; }
 
-                                                                                                public String getCurrentTurn() { return currentTurn; }
+                                                                                                    public User getUser(){ return user; }
+                                                                                                        public void setUser(User user){ this.user = user; }
 
-                                                                                                    public void setCurrentTurn(String currentTurn) { this.currentTurn = currentTurn; }
-
-                                                                                                        public LocalDateTime getCreatedAt() { return createdAt; }
-
-                                                                                                            public User getCreator() { return creator; }
-
-                                                                                                                public void setCreator(User creator) { this.creator = creator; }
-
-                                                                                                                    public List<Move> getMoves() { return moves; }
-
-                                                                                                                        public void setMoves(List<Move> moves) { this.moves = moves; }
-                                                                                                                        }
+                                                                                                            public List<Move> getMoves(){ return moves; }
+                                                                                                                public void setMoves(List<Move> moves){ this.moves = moves; }
+                                                                                                                }

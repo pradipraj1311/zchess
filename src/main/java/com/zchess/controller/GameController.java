@@ -3,6 +3,7 @@ package com.zchess.controller;
 import com.zchess.entity.Game;
 import com.zchess.service.GameService;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -16,22 +17,17 @@ public class GameController {
                     }
 
                         @PostMapping
-                            public Game createGame(@RequestParam Long userId){
-                                    return gameService.createGame(userId);
+                            public Game createGame(){
+                                    return gameService.createGame();
                                         }
 
                                             @GetMapping
-                                                public List<Game> getAllGames(){
+                                                public List<Game> getGames(){
                                                         return gameService.getAllGames();
                                                             }
 
-                                                                @GetMapping("/user/{userId}")
-                                                                    public List<Game> getUserGames(@PathVariable Long userId){
-                                                                            return gameService.getGamesByUser(userId);
+                                                                @DeleteMapping("/{id}")
+                                                                    public void deleteGame(@PathVariable Long id){
+                                                                            gameService.deleteGame(id);
                                                                                 }
-
-                                                                                    @DeleteMapping("/{id}")
-                                                                                        public void deleteGame(@PathVariable Long id){
-                                                                                                gameService.deleteGame(id);
-                                                                                                    }
-                                                                                                    }
+                                                                                }

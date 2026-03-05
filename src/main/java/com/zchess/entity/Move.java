@@ -11,37 +11,47 @@ public class Move {
 
                 private String fromPosition;
                     private String toPosition;
+
                         private int moveNumber;
 
                             @ManyToOne
-                                @JoinColumn(name = "game_id")
-                                    private Game game;
+                                private Game game;
 
-                                        // Getters and Setters
+                                    public Move(){}
 
-                                            public Long getId() { return id; }
+                                        public Long getId(){
+                                                return id;
+                                                    }
 
-                                                public String getFromPosition() { return fromPosition; }
+                                                        public String getFromPosition(){
+                                                                return fromPosition;
+                                                                    }
 
-                                                    public void setFromPosition(String fromPosition) {
-                                                            this.fromPosition = fromPosition;
-                                                                }
-
-                                                                    public String getToPosition() { return toPosition; }
-
-                                                                        public void setToPosition(String toPosition) {
-                                                                                this.toPosition = toPosition;
+                                                                        public void setFromPosition(String fromPosition){
+                                                                                this.fromPosition = fromPosition;
                                                                                     }
 
-                                                                                        public int getMoveNumber() { return moveNumber; }
+                                                                                        public String getToPosition(){
+                                                                                                return toPosition;
+                                                                                                    }
 
-                                                                                            public void setMoveNumber(int moveNumber) {
-                                                                                                    this.moveNumber = moveNumber;
-                                                                                                        }
+                                                                                                        public void setToPosition(String toPosition){
+                                                                                                                this.toPosition = toPosition;
+                                                                                                                    }
 
-                                                                                                            public Game getGame() { return game; }
+                                                                                                                        public int getMoveNumber(){
+                                                                                                                                return moveNumber;
+                                                                                                                                    }
 
-                                                                                                                public void setGame(Game game) {
-                                                                                                                        this.game = game;
-                                                                                                                            }
-                                                                                                                            }
+                                                                                                                                        public void setMoveNumber(int moveNumber){
+                                                                                                                                                this.moveNumber = moveNumber;
+                                                                                                                                                    }
+
+                                                                                                                                                        public Game getGame(){
+                                                                                                                                                                return game;
+                                                                                                                                                                    }
+
+                                                                                                                                                                        public void setGame(Game game){
+                                                                                                                                                                                this.game = game;
+                                                                                                                                                                                    }
+                                                                                                                                                                                    }
