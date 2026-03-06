@@ -1,8 +1,6 @@
 package com.zchess.entity;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 public class Game {
@@ -11,35 +9,45 @@ public class Game {
         @GeneratedValue(strategy = GenerationType.IDENTITY)
             private Long id;
 
-                private String status; // ACTIVE / FINISHED
-                    private String currentTurn; // WHITE / BLACK
-                        private LocalDateTime createdAt;
+                private String playerWhite;
+                    private String playerBlack;
 
-                            @ManyToOne
-                                private User user;
+                        private String status;
 
-                                    @OneToMany(mappedBy = "game", cascade = CascadeType.ALL)
-                                        private List<Move> moves;
+                            public Game() {
+                                }
 
-                                            public Game(){
-                                                    this.createdAt = LocalDateTime.now();
-                                                            this.status = "ACTIVE";
-                                                                    this.currentTurn = "WHITE";
-                                                                        }
+                                    public Game(String playerWhite, String playerBlack, String status) {
+                                            this.playerWhite = playerWhite;
+                                                    this.playerBlack = playerBlack;
+                                                            this.status = status;
+                                                                }
 
-                                                                            public Long getId(){ return id; }
+                                                                    public Long getId() {
+                                                                            return id;
+                                                                                }
 
-                                                                                public String getStatus(){ return status; }
-                                                                                    public void setStatus(String status){ this.status = status; }
+                                                                                    public String getPlayerWhite() {
+                                                                                            return playerWhite;
+                                                                                                }
 
-                                                                                        public String getCurrentTurn(){ return currentTurn; }
-                                                                                            public void setCurrentTurn(String currentTurn){ this.currentTurn = currentTurn; }
-
-                                                                                                public LocalDateTime getCreatedAt(){ return createdAt; }
-
-                                                                                                    public User getUser(){ return user; }
-                                                                                                        public void setUser(User user){ this.user = user; }
-
-                                                                                                            public List<Move> getMoves(){ return moves; }
-                                                                                                                public void setMoves(List<Move> moves){ this.moves = moves; }
+                                                                                                    public void setPlayerWhite(String playerWhite) {
+                                                                                                            this.playerWhite = playerWhite;
                                                                                                                 }
+
+                                                                                                                    public String getPlayerBlack() {
+                                                                                                                            return playerBlack;
+                                                                                                                                }
+
+                                                                                                                                    public void setPlayerBlack(String playerBlack) {
+                                                                                                                                            this.playerBlack = playerBlack;
+                                                                                                                                                }
+
+                                                                                                                                                    public String getStatus() {
+                                                                                                                                                            return status;
+                                                                                                                                                                }
+
+                                                                                                                                                                    public void setStatus(String status) {
+                                                                                                                                                                            this.status = status;
+                                                                                                                                                                                }
+                                                                                                                                                                                }

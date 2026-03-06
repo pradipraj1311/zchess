@@ -2,7 +2,6 @@
 /workspaces/zchess/src/main/java/com/zchess/controller/GameController.java
 /workspaces/zchess/src/main/java/com/zchess/entity/Role.java
 /workspaces/zchess/src/main/java/com/zchess/repository/MoveRepository.java
-/workspaces/zchess/src/main/java/com/zchess/config/PasswordConfig.java
 /workspaces/zchess/src/main/java/com/zchess/controller/UserController.java
 /workspaces/zchess/src/main/java/com/zchess/config/CustomUserDetailsService.java
 /workspaces/zchess/src/main/java/com/zchess/entity/Move.java

@@ -12,6 +12,5 @@ com/zchess/entity/Game.class
 com/zchess/entity/Move.class
 com/zchess/entity/User.class
 com/zchess/ZchessApplication.class
-com/zchess/config/PasswordConfig.class
 com/zchess/controller/MoveController.class
 com/zchess/service/GameService.class

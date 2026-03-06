@@ -1,39 +1,32 @@
 package com.zchess.service;
 
-import com.zchess.entity.Role;
 import com.zchess.entity.User;
 import com.zchess.repository.UserRepository;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 
 @Service
 public class UserService {
 
-    private final UserRepository userRepository;
-        private final PasswordEncoder passwordEncoder;
+    @Autowired
+        private UserRepository userRepository;
 
-            public UserService(UserRepository userRepository,
-                                   PasswordEncoder passwordEncoder) {
-                                           this.userRepository = userRepository;
-                                                   this.passwordEncoder = passwordEncoder;
-                                                       }
+            public User registerUser(User user) {
+                    return userRepository.save(user);
+                        }
 
-                                                           public User registerUser(String username, String password, Role role) {
+                            public List<User> getAllUsers() {
+                                    return userRepository.findAll();
+                                        }
 
-                                                                   User user = new User();
-                                                                           user.setUsername(username);
-                                                                                   user.setPassword(passwordEncoder.encode(password));
-                                                                                           user.setRole(role);
+                                            public User getUser(Long id) {
+                                                    return userRepository.findById(id)
+                                                                    .orElseThrow(() -> new RuntimeException("User not found"));
+                                                                        }
 
-                                                                                                   return userRepository.save(user);
-                                                                                                       }
-
-                                                                                                           public List<User> getAllUsers() {
-                                                                                                                   return userRepository.findAll();
-                                                                                                                       }
-
-                                                                                                                           public void deleteUser(Long id) {
-                                                                                                                                   userRepository.deleteById(id);
-                                                                                                                                       }
-                                                                                                                                       }
+                                                                            public void deleteUser(Long id) {
+                                                                                    userRepository.deleteById(id);
+                                                                                        }
+                                                                                        }

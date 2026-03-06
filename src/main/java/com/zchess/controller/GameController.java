@@ -2,6 +2,7 @@ package com.zchess.controller;
 
 import com.zchess.entity.Game;
 import com.zchess.service.GameService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -10,24 +11,26 @@ import java.util.List;
 @RequestMapping("/api/games")
 public class GameController {
 
-    private final GameService gameService;
+    @Autowired
+        private GameService gameService;
 
-        public GameController(GameService gameService){
-                this.gameService = gameService;
-                    }
+            @PostMapping
+                public Game createGame(@RequestBody Game game) {
+                        return gameService.createGame(game);
+                            }
 
-                        @PostMapping
-                            public Game createGame(){
-                                    return gameService.createGame();
-                                        }
+                                @GetMapping
+                                    public List<Game> getAllGames() {
+                                            return gameService.getAllGames();
+                                                }
 
-                                            @GetMapping
-                                                public List<Game> getGames(){
-                                                        return gameService.getAllGames();
-                                                            }
+                                                    @GetMapping("/{id}")
+                                                        public Game getGame(@PathVariable Long id) {
+                                                                return gameService.getGame(id);
+                                                                    }
 
-                                                                @DeleteMapping("/{id}")
-                                                                    public void deleteGame(@PathVariable Long id){
-                                                                            gameService.deleteGame(id);
-                                                                                }
-                                                                                }
+                                                                        @DeleteMapping("/{id}")
+                                                                            public void deleteGame(@PathVariable Long id) {
+                                                                                    gameService.deleteGame(id);
+                                                                                        }
+                                                                                        }

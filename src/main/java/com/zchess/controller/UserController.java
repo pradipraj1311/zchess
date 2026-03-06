@@ -1,37 +1,36 @@
 package com.zchess.controller;
 
-import com.zchess.entity.Role;
 import com.zchess.entity.User;
 import com.zchess.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
-    private final UserService userService;
+    @Autowired
+        private UserService userService;
 
-        public UserController(UserService userService){
-                this.userService = userService;
-                    }
+            @PostMapping("/register")
+                public User registerUser(@RequestBody User user) {
+                        return userService.registerUser(user);
+                            }
 
-                        @PostMapping("/register")
-                            public User register(
-                                        @RequestParam String username,
-                                                    @RequestParam String password,
-                                                                @RequestParam Role role){
+                                @GetMapping
+                                    public List<User> getAllUsers() {
+                                            return userService.getAllUsers();
+                                                }
 
-                                                                        return userService.registerUser(username,password,role);
-                                                                            }
+                                                    @GetMapping("/{id}")
+                                                        public User getUser(@PathVariable Long id) {
+                                                                return userService.getUser(id);
+                                                                    }
 
-                                                                                @GetMapping
-                                                                                    public List<User> getAllUsers(){
-                                                                                            return userService.getAllUsers();
-                                                                                                }
-
-                                                                                                    @DeleteMapping("/{id}")
-                                                                                                        public void deleteUser(@PathVariable Long id){
-                                                                                                                userService.deleteUser(id);
-                                                                                                                    }
-                                                                                                                    }
+                                                                        @DeleteMapping("/{id}")
+                                                                            public void deleteUser(@PathVariable Long id) {
+                                                                                    userService.deleteUser(id);
+                                                                                        }
+                                                                                        }
