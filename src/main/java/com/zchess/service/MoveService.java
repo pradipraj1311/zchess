@@ -1,23 +1,57 @@
-package com.zchess.service;
+                                       package com.zchess.service;
 
-import com.zchess.entity.Move;
-import com.zchess.repository.MoveRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+                                       import com.zchess.entity.Move;
+                                       import com.zchess.engine.Board;
+                                       import com.zchess.engine.MoveValidator;
+                                       import com.zchess.repository.MoveRepository;
 
-import java.util.List;
+                                       import org.springframework.stereotype.Service;
 
-@Service
-public class MoveService {
+                                       @Service
+                                       public class MoveService {
 
-    @Autowired
-        private MoveRepository moveRepository;
+                                           private final MoveRepository moveRepository;
+                                               private final Board board;
 
-            public Move saveMove(Move move) {
-                    return moveRepository.save(move);
-                        }
+                                                   public MoveService(MoveRepository moveRepository) {
+                                                           this.moveRepository = moveRepository;
+                                                                   this.board = new Board();
+                                                                       }
 
-                            public List<Move> getMoves(Long gameId) {
-                                    return moveRepository.findAll();
-                                        }
-                                        }
+                                                                           public String[][] getBoard(){
+                                                                                   return board.getBoard();
+                                                                                       }
+
+                                                                                           public String[][] makeMove(Move move){
+
+                                                                                                   int fr = move.getFromRow();
+                                                                                                           int fc = move.getFromCol();
+                                                                                                                   int tr = move.getToRow();
+                                                                                                                           int tc = move.getToCol();
+
+                                                                                                                                   String piece = board.getBoard()[fr][fc];
+
+                                                                                                                                           if(piece == null || piece.equals("")){
+                                                                                                                                                       throw new RuntimeException("No piece selected");
+                                                                                                                                                               }
+
+                                                                                                                                                                       boolean valid = MoveValidator.isValidMove(
+                                                                                                                                                                                       piece,
+                                                                                                                                                                                                       fr,
+                                                                                                                                                                                                                       fc,
+                                                                                                                                                                                                                                       tr,
+                                                                                                                                                                                                                                                       tc,
+                                                                                                                                                                                                                                                                       board.getBoard()
+                                                                                                                                                                                                                                                                               );
+
+                                                                                                                                                                                                                                                                                       if(!valid){
+                                                                                                                                                                                                                                                                                                   throw new RuntimeException("Invalid move");
+                                                                                                                                                                                                                                                                                                           }
+
+                                                                                                                                                                                                                                                                                                                   board.movePiece(fr,fc,tr,tc);
+
+                                                                                                                                                                                                                                                                                                                           moveRepository.save(move);
+
+                                                                                                                                                                                                                                                                                                                                   return board.getBoard();
+                                                                                                                                                                                                                                                                                                                                       }
+                                                                                                                                                                                                                                                                                                                                       }

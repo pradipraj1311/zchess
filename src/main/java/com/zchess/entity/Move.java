@@ -3,55 +3,84 @@ package com.zchess.entity;
 import jakarta.persistence.*;
 
 @Entity
+@Table(name = "moves")
 public class Move {
 
     @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
             private Long id;
 
-                private String fromPosition;
-                    private String toPosition;
+                private int fromRow;
+                    private int fromCol;
 
-                        private int moveNumber;
+                        private int toRow;
+                            private int toCol;
 
-                            @ManyToOne
-                                private Game game;
+                                private int moveNumber;
 
-                                    public Move(){}
+                                    @ManyToOne
+                                        @JoinColumn(name = "game_id")
+                                            private Game game;
 
-                                        public Long getId(){
-                                                return id;
-                                                    }
+                                                public Move() {}
 
-                                                        public String getFromPosition(){
-                                                                return fromPosition;
-                                                                    }
+                                                    public Move(int fromRow, int fromCol, int toRow, int toCol, int moveNumber) {
+                                                            this.fromRow = fromRow;
+                                                                    this.fromCol = fromCol;
+                                                                            this.toRow = toRow;
+                                                                                    this.toCol = toCol;
+                                                                                            this.moveNumber = moveNumber;
+                                                                                                }
 
-                                                                        public void setFromPosition(String fromPosition){
-                                                                                this.fromPosition = fromPosition;
-                                                                                    }
+                                                                                                    public Long getId() {
+                                                                                                            return id;
+                                                                                                                }
 
-                                                                                        public String getToPosition(){
-                                                                                                return toPosition;
-                                                                                                    }
+                                                                                                                    public int getFromRow() {
+                                                                                                                            return fromRow;
+                                                                                                                                }
 
-                                                                                                        public void setToPosition(String toPosition){
-                                                                                                                this.toPosition = toPosition;
-                                                                                                                    }
+                                                                                                                                    public void setFromRow(int fromRow) {
+                                                                                                                                            this.fromRow = fromRow;
+                                                                                                                                                }
 
-                                                                                                                        public int getMoveNumber(){
-                                                                                                                                return moveNumber;
-                                                                                                                                    }
+                                                                                                                                                    public int getFromCol() {
+                                                                                                                                                            return fromCol;
+                                                                                                                                                                }
 
-                                                                                                                                        public void setMoveNumber(int moveNumber){
-                                                                                                                                                this.moveNumber = moveNumber;
-                                                                                                                                                    }
+                                                                                                                                                                    public void setFromCol(int fromCol) {
+                                                                                                                                                                            this.fromCol = fromCol;
+                                                                                                                                                                                }
 
-                                                                                                                                                        public Game getGame(){
-                                                                                                                                                                return game;
-                                                                                                                                                                    }
+                                                                                                                                                                                    public int getToRow() {
+                                                                                                                                                                                            return toRow;
+                                                                                                                                                                                                }
 
-                                                                                                                                                                        public void setGame(Game game){
-                                                                                                                                                                                this.game = game;
-                                                                                                                                                                                    }
-                                                                                                                                                                                    }
+                                                                                                                                                                                                    public void setToRow(int toRow) {
+                                                                                                                                                                                                            this.toRow = toRow;
+                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                    public int getToCol() {
+                                                                                                                                                                                                                            return toCol;
+                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                    public void setToCol(int toCol) {
+                                                                                                                                                                                                                                            this.toCol = toCol;
+                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                    public int getMoveNumber() {
+                                                                                                                                                                                                                                                            return moveNumber;
+                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                    public void setMoveNumber(int moveNumber) {
+                                                                                                                                                                                                                                                                            this.moveNumber = moveNumber;
+                                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                                    public Game getGame() {
+                                                                                                                                                                                                                                                                                            return game;
+                                                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                                                    public void setGame(Game game) {
+                                                                                                                                                                                                                                                                                                            this.game = game;
+                                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                                }

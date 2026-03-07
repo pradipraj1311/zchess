@@ -1,5 +1,6 @@
 package com.zchess.service;
-
+import com.zchess.engine.Board;
+import com.zchess.engine.MoveValidator;
 import com.zchess.entity.Game;
 import com.zchess.repository.GameRepository;
 import org.springframework.beans.factory.annotation.Autowired;
