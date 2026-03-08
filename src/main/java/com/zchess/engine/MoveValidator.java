@@ -2,37 +2,46 @@ package com.zchess.engine;
 
 public class MoveValidator {
 
-    public static boolean isValid(String piece, int fr, int fc, int tr, int tc) {
+    public static boolean isValid(String[][] board, int fr, int fc, int tr, int tc){
 
-            if (piece == null || piece.isEmpty()) {
-                        return false;
-                                }
+            String piece = board[fr][fc];
 
-                                        char type = Character.toLowerCase(piece.charAt(1));
+                    if(piece == null || piece.equals("")){
+                                return false;
+                                        }
 
-                                                switch (type) {
+                                                String target = board[tr][tc];
 
-                                                            case 'p':
-                                                                            return PawnValidator.isValid(fr, fc, tr, tc);
+                                                        // prevent capturing own piece
+                                                                if(target != null && !target.equals("")){
+                                                                            if(target.charAt(0) == piece.charAt(0)){
+                                                                                            return false;
+                                                                                                        }
+                                                                                                                }
 
-                                                                                        case 'r':
-                                                                                                        return RookValidator.isValid(fr, fc, tr, tc);
+                                                                                                                        char type = piece.charAt(1);
 
-                                                                                                                    case 'n':
-                                                                                                                                    return KnightValidator.isValid(fr, fc, tr, tc);
+                                                                                                                                switch(type){
 
-                                                                                                                                                case 'b':
-                                                                                                                                                                return BishopValidator.isValid(fr, fc, tr, tc);
+                                                                                                                                            case 'p':
+                                                                                                                                                            return PawnValidator.isValid(board, fr, fc, tr, tc);
 
-                                                                                                                                                                            case 'q':
-                                                                                                                                                                                            return QueenValidator.isValid(fr, fc, tr, tc);
+                                                                                                                                                                        case 'r':
+                                                                                                                                                                                        return RookValidator.isValid(board, fr, fc, tr, tc);
 
-                                                                                                                                                                                                        case 'k':
-                                                                                                                                                                                                                        return KingValidator.isValid(fr, fc, tr, tc);
+                                                                                                                                                                                                    case 'n':
+                                                                                                                                                                                                                    return KnightValidator.isValid(fr, fc, tr, tc);
 
-                                                                                                                                                                                                                                    default:
-                                                                                                                                                                                                                                                    return false;
-                                                                                                                                                                                                                                                            }
-                                                                                                                                                                                                                                                                }
-                                                                                                                                                                                                                                                                }
-                                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                case 'b':
+                                                                                                                                                                                                                                                return BishopValidator.isValid(board, fr, fc, tr, tc);
+
+                                                                                                                                                                                                                                                            case 'q':
+                                                                                                                                                                                                                                                                            return QueenValidator.isValid(board, fr, fc, tr, tc);
+
+                                                                                                                                                                                                                                                                                        case 'k':
+                                                                                                                                                                                                                                                                                                        return KingValidator.isValid(fr, fc, tr, tc);
+                                                                                                                                                                                                                                                                                                                }
+
+                                                                                                                                                                                                                                                                                                                        return false;
+                                                                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                                                                            }

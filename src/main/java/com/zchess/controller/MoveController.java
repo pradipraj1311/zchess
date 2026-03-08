@@ -1,14 +1,12 @@
 package com.zchess.controller;
 
 import com.zchess.entity.Move;
+import com.zchess.engine.Board;
 import com.zchess.service.MoveService;
-
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
-@RequestMapping("/api/moves")
+@RequestMapping("/api")
 public class MoveController {
 
     private final MoveService moveService;
@@ -17,13 +15,11 @@ public class MoveController {
                 this.moveService = moveService;
                     }
 
-                        @PostMapping
-                            public Move addMove(@RequestBody Move move){
-                                    return moveService.saveMove(move);
-                                        }
+                        @PostMapping("/move")
+                            public String[][] move(@RequestBody Move move){
 
-                                            @GetMapping("/game/{gameId}")
-                                                public List<Move> getMoves(@PathVariable Long gameId){
-                                                        return moveService.getMoves(gameId);
-                                                            }
-                                                            }
+                                    moveService.saveMove(move);
+
+                                            return Board.getBoard();
+                                                }
+                                                }

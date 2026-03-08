@@ -2,20 +2,26 @@ package com.zchess.engine;
 
 public class PawnValidator {
 
-    public static boolean isValid(int fr, int fc, int tr, int tc) {
+    public static boolean isValid(String[][] board,int fr,int fc,int tr,int tc){
 
-            int direction = tr - fr;
+            String piece = board[fr][fc];
 
-                    // pawn forward move
-                            if (fc == tc && direction == 1) {
-                                        return true;
-                                                }
+                    int direction = piece.charAt(0) == 'w' ? -1 : 1;
 
-                                                        // pawn diagonal capture
-                                                                if (Math.abs(fc - tc) == 1 && direction == 1) {
-                                                                            return true;
+                            // forward move
+                                    if(fc == tc && board[tr][tc].equals("")){
+                                                if(tr - fr == direction){
+                                                                return true;
+                                                                            }
                                                                                     }
 
-                                                                                            return false;
-                                                                                                }
-                                                                                                }
+                                                                                            // capture
+                                                                                                    if(Math.abs(fc - tc) == 1 && tr - fr == direction){
+                                                                                                                if(!board[tr][tc].equals("")){
+                                                                                                                                return true;
+                                                                                                                                            }
+                                                                                                                                                    }
+
+                                                                                                                                                            return false;
+                                                                                                                                                                }
+                                                                                                                                                                }
