@@ -5,80 +5,102 @@ let board = []
 
 function loadBoard(){
 
- fetch("/api/game/board")
-  .then(r => r.json())
-   .then(data => {
-       board = data
-           drawBoard()
-            })
-            }
+fetch("/api/game/board")
+.then(res=>res.json())
+.then(data=>{
 
-            function drawBoard(){
+board=data
+drawBoard()
 
-             boardDiv.innerHTML = ""
+})
 
-              for(let r=0;r<8;r++){
+}
 
-                 for(let c=0;c<8;c++){
+function drawBoard(){
 
-                       const sq = document.createElement("div")
+boardDiv.innerHTML=""
 
-                             sq.classList.add("square")
-                                   sq.classList.add((r+c)%2==0 ? "white":"black")
+for(let r=0;r<8;r++){
 
-                                         sq.dataset.row = r
-                                               sq.dataset.col = c
+for(let c=0;c<8;c++){
 
-                                                     sq.onclick = squareClick
+const square=document.createElement("div")
 
-                                                           const piece = board[r][c]
+square.className="square"
 
-                                                                 if(piece !== ""){
+if((r+c)%2==0)
+square.classList.add("light")
+else
+square.classList.add("dark")
 
-                                                                          const img = document.createElement("img")
-                                                                                   img.src = "/pieces/" + piece + ".svg"
-                                                                                            img.className = "piece"
+square.onclick=()=>squareClick(r,c)
 
-                                                                                                     sq.appendChild(img)
-                                                                                                           }
+const piece=board[r][c]
 
-                                                                                                                 boardDiv.appendChild(sq)
-                                                                                                                    }
-                                                                                                                     }
-                                                                                                                     }
+if(piece){
 
-                                                                                                                     function squareClick(){
+const img=document.createElement("img")
 
-                                                                                                                      const r = this.dataset.row
-                                                                                                                       const c = this.dataset.col
+img.src="/pieces/"+piece+".svg"
 
-                                                                                                                        if(selected == null){
+img.className="piece"
 
-                                                                                                                            selected = {r,c}
-                                                                                                                                return
-                                                                                                                                 }
+square.appendChild(img)
 
-                                                                                                                                  const move = {
-                                                                                                                                     fromRow: parseInt(selected.r),
-                                                                                                                                        fromCol: parseInt(selected.c),
-                                                                                                                                           toRow: parseInt(r),
-                                                                                                                                              toCol: parseInt(c)
-                                                                                                                                               }
+}
 
-                                                                                                                                                fetch("/api/move",{
-                                                                                                                                                   method:"POST",
-                                                                                                                                                      headers:{
-                                                                                                                                                            "Content-Type":"application/json"
-                                                                                                                                                               },
-                                                                                                                                                                  body:JSON.stringify(move)
-                                                                                                                                                                   })
-                                                                                                                                                                    .then(r => r.json())
-                                                                                                                                                                     .then(newBoard=>{
-                                                                                                                                                                         board = newBoard
-                                                                                                                                                                             drawBoard()
-                                                                                                                                                                              })
+boardDiv.appendChild(square)
 
-                                                                                                                                                                               selected = null
-                                                                                                                                                                               }
+}
 
-                                                                                                                                                                               loadBoard()
+}
+
+}
+
+function squareClick(r,c){
+
+if(selected==null){
+
+selected={r:r,c:c}
+return
+
+}
+
+movePiece(selected.r,selected.c,r,c)
+
+selected=null
+
+}
+
+function movePiece(fr,fc,tr,tc){
+
+fetch("/api/move",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+fromRow:fr,
+fromCol:fc,
+toRow:tr,
+toCol:tc
+
+})
+
+})
+.then(res=>res.json())
+.then(data=>{
+
+board=data
+drawBoard()
+
+})
+.catch(err=>console.error(err))
+
+}
+
+loadBoard()

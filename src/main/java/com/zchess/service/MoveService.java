@@ -3,45 +3,35 @@ package com.zchess.service;
 import com.zchess.engine.Board;
 import com.zchess.engine.MoveValidator;
 import com.zchess.entity.Move;
-import com.zchess.repository.MoveRepository;
 import org.springframework.stereotype.Service;
 
 @Service
 public class MoveService {
 
-    private final MoveRepository moveRepository;
+    public String[][] saveMove(Move move) {
 
-        public MoveService(MoveRepository moveRepository) {
-                this.moveRepository = moveRepository;
-                    }
+            String[][] board = Board.getBoard();
 
-                        public String[][] saveMove(Move move) {
+                    int fr = move.getFromRow();
+                            int fc = move.getFromCol();
+                                    int tr = move.getToRow();
+                                            int tc = move.getToCol();
 
-                                String[][] board = Board.getBoard();
+                                                    String piece = board[fr][fc];
 
-                                        int fr = move.getFromRow();
-                                                int fc = move.getFromCol();
-                                                        int tr = move.getToRow();
-                                                                int tc = move.getToCol();
+                                                            if (piece == null || piece.equals("")) {
+                                                                        return board;
+                                                                                }
 
-                                                                        // validate move
-                                                                                boolean valid = MoveValidator.isValid(board, fr, fc, tr, tc);
+                                                                                        boolean valid = MoveValidator.isValidMove(piece, fr, fc, tr, tc, board);
 
-                                                                                        if (!valid) {
-                                                                                                    throw new RuntimeException("Invalid chess move");
-                                                                                                            }
+                                                                                                if (!valid) {
+                                                                                                            return board;
+                                                                                                                    }
 
-                                                                                                                    // move piece
-                                                                                                                            board[tr][tc] = board[fr][fc];
+                                                                                                                            board[tr][tc] = piece;
                                                                                                                                     board[fr][fc] = "";
 
-                                                                                                                                            // save to database
-                                                                                                                                                    moveRepository.save(move);
-
-                                                                                                                                                            return board;
-                                                                                                                                                                }
-
-                                                                                                                                                                    public String[][] getBoard() {
-                                                                                                                                                                            return Board.getBoard();
-                                                                                                                                                                                }
-                                                                                                                                                                                }
+                                                                                                                                            return board;
+                                                                                                                                                }
+                                                                                                                                                }

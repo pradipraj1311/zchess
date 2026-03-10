@@ -2,46 +2,38 @@ package com.zchess.engine;
 
 public class MoveValidator {
 
-    public static boolean isValid(String[][] board, int fr, int fc, int tr, int tc){
+    public static boolean isValidMove(String piece,
+                                          int fr,
+                                                                                int fc,
+                                                                                                                      int tr,
+                                                                                                                                                            int tc,
+                                                                                                                                                                                                  String[][] board) {
 
-            String piece = board[fr][fc];
+                                                                                                                                                                                                          if (piece.startsWith("wp") || piece.startsWith("bp")) {
+                                                                                                                                                                                                                      return PawnValidator.isValid(fr, fc, tr, tc, board);
+                                                                                                                                                                                                                              }
 
-                    if(piece == null || piece.equals("")){
-                                return false;
-                                        }
+                                                                                                                                                                                                                                      if (piece.endsWith("r")) {
+                                                                                                                                                                                                                                                  return RookValidator.isValid(fr, fc, tr, tc);
+                                                                                                                                                                                                                                                          }
 
-                                                String target = board[tr][tc];
+                                                                                                                                                                                                                                                                  if (piece.endsWith("n")) {
+                                                                                                                                                                                                                                                                              return KnightValidator.isValid(fr, fc, tr, tc);
+                                                                                                                                                                                                                                                                                      }
 
-                                                        // prevent capturing own piece
-                                                                if(target != null && !target.equals("")){
-                                                                            if(target.charAt(0) == piece.charAt(0)){
-                                                                                            return false;
-                                                                                                        }
-                                                                                                                }
+                                                                                                                                                                                                                                                                                              if (piece.endsWith("b")) {
+                                                                                                                                                                                                                                                                                                          return BishopValidator.isValid(fr, fc, tr, tc);
+                                                                                                                                                                                                                                                                                                                  }
 
-                                                                                                                        char type = piece.charAt(1);
+                                                                                                                                                                                                                                                                                                                          if (piece.endsWith("q")) {
+                                                                                                                                                                                                                                                                                                                                      return QueenValidator.isValid(fr, fc, tr, tc);
+                                                                                                                                                                                                                                                                                                                                              }
 
-                                                                                                                                switch(type){
+                                                                                                                                                                                                                                                                                                                                                      if (piece.endsWith("k")) {
+                                                                                                                                                                                                                                                                                                                                                                  return KingValidator.isValid(fr, fc, tr, tc);
+                                                                                                                                                                                                                                                                                                                                                                          }
 
-                                                                                                                                            case 'p':
-                                                                                                                                                            return PawnValidator.isValid(board, fr, fc, tr, tc);
-
-                                                                                                                                                                        case 'r':
-                                                                                                                                                                                        return RookValidator.isValid(board, fr, fc, tr, tc);
-
-                                                                                                                                                                                                    case 'n':
-                                                                                                                                                                                                                    return KnightValidator.isValid(fr, fc, tr, tc);
-
-                                                                                                                                                                                                                                case 'b':
-                                                                                                                                                                                                                                                return BishopValidator.isValid(board, fr, fc, tr, tc);
-
-                                                                                                                                                                                                                                                            case 'q':
-                                                                                                                                                                                                                                                                            return QueenValidator.isValid(board, fr, fc, tr, tc);
-
-                                                                                                                                                                                                                                                                                        case 'k':
-                                                                                                                                                                                                                                                                                                        return KingValidator.isValid(fr, fc, tr, tc);
-                                                                                                                                                                                                                                                                                                                }
-
-                                                                                                                                                                                                                                                                                                                        return false;
-                                                                                                                                                                                                                                                                                                                            }
-                                                                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                                                                                                                                  return false;
+                                                                                                                                                                                                                                                                                                                                                                                      }
+                                                                                                                                                                                                                                                                                                                                                                                      }
+                                                                                                                                                                                                                                                                                                                                                                                      

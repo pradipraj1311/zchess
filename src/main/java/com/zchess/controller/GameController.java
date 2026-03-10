@@ -1,14 +1,17 @@
 package com.zchess.controller;
 
 import com.zchess.engine.Board;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequestMapping("/api")
 public class GameController {
 
-    @GetMapping("/api/game/board")
-        public String[][] getBoard() {
+    @GetMapping("/game/board")
+        public String[][] board(){
+
                 return Board.getBoard();
+
                     }
+
                     }

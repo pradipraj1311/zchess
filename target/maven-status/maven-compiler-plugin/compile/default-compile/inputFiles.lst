@@ -19,6 +19,7 @@
 /workspaces/zchess/src/main/java/com/zchess/engine/Board.java
 /workspaces/zchess/src/main/java/com/zchess/controller/MoveController.java
 /workspaces/zchess/src/main/java/com/zchess/repository/GameRepository.java
+/workspaces/zchess/src/main/java/com/zchess/engine/GameState.java
 /workspaces/zchess/src/main/java/com/zchess/engine/KnightValidator.java
 /workspaces/zchess/src/main/java/com/zchess/service/GameService.java
 /workspaces/zchess/src/main/java/com/zchess/config/SecurityConfig.java
