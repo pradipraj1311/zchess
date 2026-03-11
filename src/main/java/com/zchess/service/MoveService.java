@@ -1,14 +1,13 @@
 package com.zchess.service;
 
 import com.zchess.engine.Board;
-import com.zchess.engine.MoveValidator;
 import com.zchess.entity.Move;
 import org.springframework.stereotype.Service;
 
 @Service
 public class MoveService {
 
-    public String[][] saveMove(Move move) {
+    public String[][] saveMove(Move move){
 
             String[][] board = Board.getBoard();
 
@@ -19,19 +18,13 @@ public class MoveService {
 
                                                     String piece = board[fr][fc];
 
-                                                            if (piece == null || piece.equals("")) {
+                                                            if(piece == null || piece.equals("")){
                                                                         return board;
                                                                                 }
 
-                                                                                        boolean valid = MoveValidator.isValidMove(piece, fr, fc, tr, tc, board);
+                                                                                        board[tr][tc] = piece;
+                                                                                                board[fr][fc] = "";
 
-                                                                                                if (!valid) {
-                                                                                                            return board;
-                                                                                                                    }
-
-                                                                                                                            board[tr][tc] = piece;
-                                                                                                                                    board[fr][fc] = "";
-
-                                                                                                                                            return board;
-                                                                                                                                                }
-                                                                                                                                                }
+                                                                                                        return board;
+                                                                                                            }
+                                                                                                            }
