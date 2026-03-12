@@ -1,17 +1,34 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-<title>Chess Game</title>
-<link rel="stylesheet" href="chess.css">
-</head>
+    <meta charset="UTF-8">
+        <title>Local Two Player Chess</title>
+            <link rel="stylesheet" href="chess.css">
+            </head>
 
-<body>
+            <body>
 
-<h2>Local Two Player Chess</h2>
+            <h1>Local Two Player Chess</h1>
 
-<div id="board"></div>
+            <h2 id="turn">Turn: White</h2>
 
-<script src="chess.js"></script>
+            <div class="controls">
 
-</body>
-</html>
+                <button onclick="resetGame()">Reset Game</button>
+
+                    <button onclick="undoMove()">Undo Move</button>
+
+                    </div>
+
+                    <div id="board"></div>
+
+                    <h3>Move History</h3>
+
+                    <ul id="history"></ul>
+
+                    <script src="chess.js"></script>
+
+                    </body>
+
+                    </html>

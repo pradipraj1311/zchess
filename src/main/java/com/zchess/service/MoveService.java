@@ -1,6 +1,8 @@
 package com.zchess.service;
-
+import com.zchess.engine.ChessNotation;
 import com.zchess.engine.Board;
+import com.zchess.engine.MoveValidator;
+import com.zchess.engine.GameState;
 import com.zchess.entity.Move;
 import org.springframework.stereotype.Service;
 
@@ -18,13 +20,32 @@ public class MoveService {
 
                                                     String piece = board[fr][fc];
 
-                                                            if(piece == null || piece.equals("")){
+                                                            if(piece == null || piece.equals(""))
                                                                         return board;
-                                                                                }
 
-                                                                                        board[tr][tc] = piece;
-                                                                                                board[fr][fc] = "";
+                                                                                char color = piece.charAt(0);
 
-                                                                                                        return board;
-                                                                                                            }
-                                                                                                            }
+                                                                                        if(GameState.turn == 'w' && color != 'w')
+                                                                                                    return board;
+
+                                                                                                            if(GameState.turn == 'b' && color != 'b')
+                                                                                                                        return board;
+                                                                                                                                boolean valid = MoveValidator.isValidMove(piece, fr, fc, tr, tc, board);
+
+                                                                                                                                        if(!valid)
+                                                                                                                                                    return board;
+
+                                                                                                                                                            String captured = board[tr][tc];
+
+                                                                                                                                                                    board[tr][tc] = piece;
+                                                                                                                                                                            board[fr][fc] = "";
+
+                                                                                                                                                                                    String notation = ChessNotation.convert(piece, fr, fc, tr, tc);
+
+                                                                                                                                                                                    GameState.addMove(notation);
+
+                                                                                                                                                                                            GameState.turn = (GameState.turn == 'w') ? 'b' : 'w';
+
+                                                                                                                                                                                                    return board;
+                                                                                                                                                                                                        }
+                                                                                                                                                                                                        }

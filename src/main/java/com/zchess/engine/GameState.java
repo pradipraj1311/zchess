@@ -1,21 +1,32 @@
 package com.zchess.engine;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class GameState {
 
-    private static String turn = "white";
+    public static char turn = 'w';
 
-        public static String getTurn(){
-                return turn;
-                    }
+        private static List<String> moveHistory = new ArrayList<>();
 
-                        public static void switchTurn(){
+            public static void addMove(String move){
+                    moveHistory.add(move);
+                        }
 
-                                if(turn.equals("white")){
-                                            turn="black";
-                                                    }else{
-                                                                turn="white";
-                                                                        }
+                            public static List<String> getHistory(){
+                                    return moveHistory;
+                                        }
+                                        public static void undo(){
 
-                                                                            }
+                                                if(moveHistory.size() > 0)
+                                                        moveHistory.remove(moveHistory.size()-1);
 
-                                                                            }
+                                                        }
+                                        
+
+                                            public static void reset(){
+                                                    moveHistory.clear();
+                                                            turn = 'w';
+                                                                }
+
+                                                                }

@@ -2,29 +2,29 @@ package com.zchess.engine;
 
 public class Board {
 
-    private static String[][] board = {
+    private static String[][] board;
 
-                {"br","bn","bb","bq","bk","bb","bn","br"},
-                            {"bp","bp","bp","bp","bp","bp","bp","bp"},
-                                        {"","","","","","","",""},
-                                                    {"","","","","","","",""},
-                                                                {"","","","","","","",""},
-                                                                            {"","","","","","","",""},
-                                                                                        {"wp","wp","wp","wp","wp","wp","wp","wp"},
-                                                                                                    {"wr","wn","wb","wq","wk","wb","wn","wr"}
+        static {
+                resetBoard();
+                    }
 
-                                                                                                        };
+                        public static String[][] getBoard(){
+                                return board;
+                                    }
 
-                                                                                                            public static String[][] getBoard() {
-                                                                                                                    return board;
-                                                                                                                        }
+                                        public static void resetBoard(){
 
-                                                                                                                            public static void move(int fr,int fc,int tr,int tc){
+                                                board = new String[][]{
 
-                                                                                                                                    String piece = board[fr][fc];
+                                                            {"br","bn","bb","bq","bk","bb","bn","br"},
+                                                                        {"bp","bp","bp","bp","bp","bp","bp","bp"},
+                                                                                    {"","","","","","","",""},
+                                                                                                {"","","","","","","",""},
+                                                                                                            {"","","","","","","",""},
+                                                                                                                        {"","","","","","","",""},
+                                                                                                                                    {"wp","wp","wp","wp","wp","wp","wp","wp"},
+                                                                                                                                                {"wr","wn","wb","wq","wk","wb","wn","wr"}
 
-                                                                                                                                            board[tr][tc] = piece;
-                                                                                                                                                    board[fr][fc] = "";
-
-                                                                                                                                                        }
-                                                                                                                                                        }
+                                                                                                                                                        };
+                                                                                                                                                            }
+                                                                                                                                                            }

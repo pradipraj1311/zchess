@@ -2,6 +2,7 @@
 /workspaces/zchess/src/main/java/com/zchess/engine/RookValidator.java
 /workspaces/zchess/src/main/java/com/zchess/entity/Game.java
 /workspaces/zchess/src/main/java/com/zchess/controller/GameController.java
+/workspaces/zchess/src/main/java/com/zchess/engine/ChessNotation.java
 /workspaces/zchess/src/main/java/com/zchess/engine/MoveValidator.java
 /workspaces/zchess/src/main/java/com/zchess/engine/KingValidator.java
 /workspaces/zchess/src/main/java/com/zchess/entity/Move.java

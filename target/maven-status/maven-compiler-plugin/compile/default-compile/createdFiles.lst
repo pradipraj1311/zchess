@@ -9,6 +9,7 @@ com/zchess/repository/MoveRepository.class
 com/zchess/config/SecurityConfig.class
 com/zchess/controller/UserController.class
 com/zchess/repository/GameRepository.class
+com/zchess/engine/ChessNotation.class
 com/zchess/engine/BishopValidator.class
 com/zchess/config/CustomUserDetailsService.class
 com/zchess/entity/Game.class
