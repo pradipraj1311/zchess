@@ -1,16 +1,15 @@
 #board{
 
     display:grid;
-    grid-template-columns:repeat(8,70px);
-    width:560px;
-    border:3px solid black;
+    grid-template-columns:repeat(8,80px);
+    width:640px;
 
     }
 
     .square{
 
-    width:70px;
-    height:70px;
+    width:80px;
+    height:80px;
 
     }
 
@@ -28,7 +27,7 @@
 
     .piece{
 
-    width:100%;
-    cursor:pointer;
+    width:80px;
+    height:80px;
 
     }

@@ -2,7 +2,6 @@ com/zchess/repository/UserRepository.class
 com/zchess/entity/Role.class
 com/zchess/controller/GameController.class
 com/zchess/service/UserService.class
-com/zchess/service/MoveService.class
 com/zchess/engine/Board.class
 com/zchess/engine/MoveValidator.class
 com/zchess/repository/MoveRepository.class
@@ -17,11 +16,11 @@ com/zchess/entity/Move.class
 com/zchess/engine/RookValidator.class
 com/zchess/engine/PawnValidator.class
 com/zchess/entity/User.class
+com/zchess/engine/CheckDetector.class
 com/zchess/engine/GameState.class
 com/zchess/engine/QueenValidator.class
 com/zchess/engine/KnightValidator.class
 com/zchess/ZchessApplication.class
 com/zchess/controller/HomeController.class
 com/zchess/engine/KingValidator.class
-com/zchess/controller/MoveController.class
 com/zchess/service/GameService.class
