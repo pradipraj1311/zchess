@@ -1,200 +1,219 @@
-const boardDiv=document.getElementById("board")
-const historyDiv=document.getElementById("history")
-const turnLabel=document.getElementById("turn")
+const boardDiv = document.getElementById("board");
+const historyDiv = document.getElementById("history");
+const turnText = document.getElementById("turn");
 
-let selected=null
-let board=[]
-let turn="w"
-let whiteTime=600
-let blackTime=600
-let timerInterval=null
+let selected = null;
 
-function startTimer(){
-    if(timerInterval) clearInterval(timerInterval)
-    timerInterval = setInterval(()=>{
-        if(turn==="w")
-            whiteTime--
-        else
-            blackTime--
-        updateClock()
-    },1000)
-}
+let whiteTime = 600;
+let blackTime = 600;
 
-function updateClock(){
-    document.getElementById("timerWhite").innerText=
-    "White: "+formatTime(whiteTime)
-    document.getElementById("timerBlack").innerText=
-    "Black: "+formatTime(blackTime)
-}
+let currentTurn = "white";
 
-function loadBoard(){
-    fetch("/api/game/board")
-    .then(r=>r.json())
-    .then(data=>{
-        board=data
-        drawBoard()
-    })
-}
+/* ---------- TIMER ---------- */
 
-function drawBoard(){
-boardDiv.innerHTML=""
+setInterval(() => {
 
-for(let r=0;r<8;r++){
+    if (currentTurn === "white")
+            whiteTime--;
+                else
+                        blackTime--;
 
-for(let c=0;c<8;c++){
+                            updateTimer();
 
-const sq=document.createElement("div")
+                            }, 1000);
 
-sq.className="square"
+                            function updateTimer() {
 
-if((r+c)%2==0) sq.classList.add("light")
-else sq.classList.add("dark")
+                                document.getElementById("whiteTimer").innerText = formatTime(whiteTime);
+                                    document.getElementById("blackTimer").innerText = formatTime(blackTime);
 
-sq.onclick=()=>squareClick(r,c)
+                                    }
 
-const piece=board[r][c]
+                                    function formatTime(t) {
 
-if(piece){
+                                        let m = Math.floor(t / 60);
+                                            let s = t % 60;
 
-const img=document.createElement("img")
+                                                return m + ":" + (s < 10 ? "0" : "") + s;
 
-img.src="/pieces/"+piece+".svg"
+                                                }
 
-img.className="piece"
+                                                /* ---------- BOARD ---------- */
 
-sq.appendChild(img)
+                                                function loadBoard() {
 
-}
+                                                    fetch("/api/game/board")
+                                                            .then(res => res.json())
+                                                                    .then(board => drawBoard(board));
 
-boardDiv.appendChild(sq)
+                                                                    }
 
-}
+                                                                    function drawBoard(board) {
 
-}
+                                                                        boardDiv.innerHTML = "";
 
-updateTurn()
+                                                                            for (let r = 0; r < 8; r++) {
 
-}
+                                                                                    for (let c = 0; c < 8; c++) {
 
-function squareClick(r,c){
+                                                                                                const sq = document.createElement("div");
 
-if(selected==null){
+                                                                                                            sq.className = "square";
 
-selected={r:r,c:c}
-return
+                                                                                                                        if ((r + c) % 2 === 0)
+                                                                                                                                        sq.classList.add("light");
+                                                                                                                                                    else
+                                                                                                                                                                    sq.classList.add("dark");
 
-}
+                                                                                                                                                                                sq.dataset.row = r;
+                                                                                                                                                                                            sq.dataset.col = c;
 
-movePiece(selected.r,selected.c,r,c)
+                                                                                                                                                                                                        sq.onclick = squareClick;
 
-selected=null
+                                                                                                                                                                                                                    const piece = board[r][c];
 
-}
+                                                                                                                                                                                                                                if (piece) {
 
-function movePiece(fr,fc,tr,tc){
+                                                                                                                                                                                                                                                const img = document.createElement("img");
 
-fetch("/api/move",{
+                                                                                                                                                                                                                                                                img.src = "/pieces/" + piece + ".svg";
 
-method:"POST",
+                                                                                                                                                                                                                                                                                img.className = "piece";
 
-headers:{"Content-Type":"application/json"},
+                                                                                                                                                                                                                                                                                                sq.appendChild(img);
+                                                                                                                                                                                                                                                                                                            }
 
-body:JSON.stringify({
+                                                                                                                                                                                                                                                                                                                        boardDiv.appendChild(sq);
+                                                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                                    }
 
-fromRow:fr,
-fromCol:fc,
-toRow:tr,
-toCol:tc
+                                                                                                                                                                                                                                                                                                                                    /* ---------- MOVE ---------- */
 
-})
+                                                                                                                                                                                                                                                                                                                                    function squareClick() {
 
-})
+                                                                                                                                                                                                                                                                                                                                        const r = this.dataset.row;
+                                                                                                                                                                                                                                                                                                                                            const c = this.dataset.col;
 
-.then(r=>r.json())
+                                                                                                                                                                                                                                                                                                                                                if (!selected) {
 
-.then(data=>{
+                                                                                                                                                                                                                                                                                                                                                        selected = { r, c };
+                                                                                                                                                                                                                                                                                                                                                                this.style.outline = "3px solid red";
 
-board=data
+                                                                                                                                                                                                                                                                                                                                                                    } else {
 
-drawBoard()
+                                                                                                                                                                                                                                                                                                                                                                            movePiece(selected.r, selected.c, r, c);
+                                                                                                                                                                                                                                                                                                                                                                                    selected = null;
+                                                                                                                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                                                                                                                        }
 
-toggleTurn()
+                                                                                                                                                                                                                                                                                                                                                                                        function movePiece(fr, fc, tr, tc) {
 
-loadHistory()
+                                                                                                                                                                                                                                                                                                                                                                                            fetch("/api/move", {
 
-})
+                                                                                                                                                                                                                                                                                                                                                                                                    method: "POST",
 
-}
+                                                                                                                                                                                                                                                                                                                                                                                                            headers: {
+                                                                                                                                                                                                                                                                                                                                                                                                                        "Content-Type": "application/json"
+                                                                                                                                                                                                                                                                                                                                                                                                                                },
 
-function toggleTurn(){
+                                                                                                                                                                                                                                                                                                                                                                                                                                        body: JSON.stringify({
 
-turn=(turn==="w")?"b":"w"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    fromRow: parseInt(fr),
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                fromCol: parseInt(fc),
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                            toRow: parseInt(tr),
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        toCol: parseInt(tc)
 
-updateTurn()
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                })
 
-}
-function formatTime(t){
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    })
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            .then(res => res.json())
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    .then(() => {
 
-    let m=Math.floor(t/60)
-    let s=t%60
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                loadBoard();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            loadHistory();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        loadTurn();
 
-    if(s<10) s="0"+s
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                });
 
-    return m+":"+s
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
 
-}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                /* ---------- HISTORY ---------- */
 
-function updateTurn(){
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                function loadHistory() {
 
-if(turn==="w")
-turnLabel.innerText="Turn: White"
-else
-turnLabel.innerText="Turn: Black"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    fetch("/api/game/history")
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            .then(res => res.json())
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    .then(list => {
 
-}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                historyDiv.innerHTML = "";
 
-function loadHistory(){
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            list.forEach(m => {
 
-fetch("/api/game/history")
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            const li = document.createElement("li");
 
-.then(r=>r.json())
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            li.innerText = m;
 
-.then(data=>{
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            historyDiv.appendChild(li);
 
-historyDiv.innerHTML=""
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        });
 
-data.forEach(m=>{
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                });
 
-const li=document.createElement("li")
-li.innerText=m
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
 
-historyDiv.appendChild(li)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                /* ---------- TURN ---------- */
 
-})
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                function loadTurn() {
 
-})
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    fetch("/api/game/turn")
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            .then(res => res.text())
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    .then(t => {
 
-}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                currentTurn = t;
 
-function resetGame(){
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            turnText.innerText = "Turn: " + t;
 
-fetch("/api/game/reset",{method:"POST"})
-.then(()=>location.reload())
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    });
 
-}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
 
-function undoMove(){
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    /* ---------- RESET ---------- */
 
-fetch("/api/game/undo",{method:"POST"})
-.then(()=>{
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    function resetGame() {
 
-loadBoard()
-loadHistory()
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        fetch("/api/game/reset", { method: "POST" })
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                .then(() => {
 
-})
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            loadBoard();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        loadHistory();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    loadTurn();
 
-}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                whiteTime = 600;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            blackTime = 600;
 
-loadBoard()
-loadHistory()
-startTimer()
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    });
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    /* ---------- UNDO ---------- */
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    function undoMove() {
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        fetch("/api/game/undo", { method: "POST" })
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                .then(() => {
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            loadBoard();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        loadHistory();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    loadTurn();
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            });
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            /* ---------- START ---------- */
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            loadBoard();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            loadHistory();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            loadTurn();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            

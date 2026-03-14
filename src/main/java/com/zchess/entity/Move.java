@@ -18,9 +18,11 @@ public class Move {
 
                                 private int moveNumber;
 
-                                    @ManyToOne
-                                        @JoinColumn(name = "game_id")
-                                            private Game game;
+                                    private String piece;
+
+                                        @ManyToOne
+                                            @JoinColumn(name = "game_id")
+                                                private Game game;
 
                                                 public Move() {}
 
@@ -76,12 +78,16 @@ public class Move {
                                                                                                                                                                                                                                                                             this.moveNumber = moveNumber;
                                                                                                                                                                                                                                                                                 }
 
-                                                                                                                                                                                                                                                                                    public Game getGame() {
-                                                                                                                                                                                                                                                                                            return game;
-                                                                                                                                                                                                                                                                                                }
+                                                                                            public String getPiece() {
+                                                                                                    return piece;
+                                                                                                        }
 
-                                                                                                                                                                                                                                                                                                    public void setGame(Game game) {
-                                                                                                                                                                                                                                                                                                            this.game = game;
-                                                                                                                                                                                                                                                                                                                }
+                                                                                                            public void setPiece(String piece) {
+                                                                                                                    this.piece = piece;
+                                                                                                                        }
+
+                                                                                                                            public Game getGame() {
+                                                                                                                                    return game;
+                                                                                                                                        }
                                                                                                                                                                                                                                                                                                                 }
                                                                                                                                                                                                                                                                                                                 

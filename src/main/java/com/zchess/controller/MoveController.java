@@ -17,7 +17,7 @@ public class MoveController {
                         @PostMapping("/move")
                             public String[][] move(@RequestBody Move move){
 
-                                    return moveService.saveMove(move);
+                                    return moveService.move(move);
 
                                         }
                                         }

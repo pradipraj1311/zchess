@@ -1,37 +1,40 @@
 package com.zchess.controller;
 
-import com.zchess.engine.Board;
-import com.zchess.engine.GameState;
+import com.zchess.service.MoveService;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/game")
 public class GameController {
 
-    @GetMapping("/board")
-        public String[][] getBoard(){
-                return Board.getBoard();
+    private final MoveService moveService;
+
+        public GameController(MoveService moveService) {
+                this.moveService = moveService;
                     }
 
-                        @GetMapping("/history")
-                            public List<String> history(){
-                                    return GameState.getHistory();
+                        @GetMapping("/board")
+                            public String[][] board() {
+                                    return moveService.getBoard();
                                         }
-                                        @PostMapping("/undo")
-                                        public String undo(){
 
-                                            GameState.undo();
+                                            @GetMapping("/history")
+                                                public Object history() {
+                                                        return moveService.getHistory();
+                                                            }
 
-                                                return "Undo move";
-                                                }
+                                                                @GetMapping("/turn")
+                                                                    public String turn() {
+                                                                            return moveService.getTurn();
+                                                                                }
 
-                                            @PostMapping("/reset")
-                                                public String reset(){
-                                                    Board.resetBoard();
-                                                        GameState.reset();
-                                                                return "Game reset";
-                                                                    }
+                                                                                    @PostMapping("/reset")
+                                                                                        public void reset() {
+                                                                                                moveService.reset();
+                                                                                                    }
 
-                                                                    }
+                                                                                                        @PostMapping("/undo")
+                                                                                                            public void undo() {
+                                                                                                                    moveService.undo();
+                                                                                                                        }
+                                                                                                                        }

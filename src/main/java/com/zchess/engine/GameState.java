@@ -5,7 +5,7 @@ import java.util.List;
 
 public class GameState {
 
-    public static char turn='w';
+    public static String currentTurn = "white";
 
         private static List<String> history=new ArrayList<>();
 
@@ -43,7 +43,7 @@ public class GameState {
                                                                                                                                                                             if(history.size()>0)
                                                                                                                                                                                         history.remove(history.size()-1);
 
-                                                                                                                                                                                                turn=(turn=='w')?'b':'w';
+                                                                                                                                                                                                currentTurn = currentTurn.equals("white") ? "black" : "white";
 
                                                                                                                                                                                                     }
 
@@ -51,8 +51,7 @@ public class GameState {
 
                                                                                                                                                                                                                 history.clear();
                                                                                                                                                                                                                         boardHistory.clear();
-                                                                                                                                                                                                                                turn='w';
-
+                                                                                                                                                                                                                                currentTurn = "white";
                                                                                                                                                                                                                                     }
-
-                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                

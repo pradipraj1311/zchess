@@ -5,7 +5,7 @@
 
 <title>Local Two Player Chess</title>
 
-<link rel="stylesheet" href="chess.css">
+<link rel="stylesheet" href="/chess.css">
 
 </head>
 
@@ -13,22 +13,26 @@
 
 <h1>Local Two Player Chess</h1>
 
-<h2 id="turn">Turn: White</h2>
+<h2 id="turn">Turn: white</h2>
 
-<h3 id="timerWhite">White: 10:00</h3>
-<h3 id="timerBlack">Black: 10:00</h3>
+White: <span id="whiteTimer">10:00</span>
+<br>
+Black: <span id="blackTimer">10:00</span>
+
+<br><br>
 
 <button onclick="resetGame()">Reset</button>
 <button onclick="undoMove()">Undo</button>
 
+<br><br>
+
 <div id="board"></div>
 
-<h3>Move History</h3>
+<h2>Move History</h2>
 
 <ul id="history"></ul>
 
-<script src="chess.js"></script>
+<script src="/chess.js"></script>
 
 </body>
-
 </html>

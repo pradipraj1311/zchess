@@ -12,6 +12,7 @@
 /workspaces/zchess/src/main/java/com/zchess/repository/UserRepository.java
 /workspaces/zchess/src/main/java/com/zchess/service/MoveService.java
 /workspaces/zchess/src/main/java/com/zchess/entity/User.java
+/workspaces/zchess/src/main/java/com/zchess/engine/CheckValidator.java
 /workspaces/zchess/src/main/java/com/zchess/entity/Role.java
 /workspaces/zchess/src/main/java/com/zchess/repository/MoveRepository.java
 /workspaces/zchess/src/main/java/com/zchess/controller/UserController.java

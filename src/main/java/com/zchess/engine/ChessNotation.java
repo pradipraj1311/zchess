@@ -2,26 +2,37 @@ package com.zchess.engine;
 
 public class ChessNotation {
 
-    public static String convert(String piece, int fr, int fc, int tr, int tc){
+    public static String convert(String piece, int fr, int fc, int tr, int tc, boolean capture){
 
-            char type = piece.charAt(1);
+            char file = (char) ('a' + tc);
+                    int rank = 8 - tr;
 
-                    String pieceLetter = "";
+                            String square = "" + file + rank;
 
-                            switch(type){
+                                    // Pawn moves
+                                            if(piece.equals("wp") || piece.equals("bp")){
 
-                                        case 'p': pieceLetter=""; break;
-                                                    case 'n': pieceLetter="N"; break;
-                                                                case 'b': pieceLetter="B"; break;
-                                                                            case 'r': pieceLetter="R"; break;
-                                                                                        case 'q': pieceLetter="Q"; break;
-                                                                                                    case 'k': pieceLetter="K"; break;
+                                                        if(capture){
+                                                                        char fromFile = (char) ('a' + fc);
+                                                                                        return fromFile + "x" + square;
+                                                                                                    }
 
-                                                                                                            }
+                                                                                                                return square;
+                                                                                                                        }
 
-                                                                                                                    char file = (char) ('a' + tc);
-                                                                                                                            int rank = 8 - tr;
+                                                                                                                                String letter="";
 
-                                                                                                                                    return pieceLetter + file + rank;
-                                                                                                                                        }
-                                                                                                                                        }
+                                                                                                                                        switch(piece.charAt(1)){
+                                                                                                                                                    case 'r': letter="R"; break;
+                                                                                                                                                                case 'n': letter="N"; break;
+                                                                                                                                                                            case 'b': letter="B"; break;
+                                                                                                                                                                                        case 'q': letter="Q"; break;
+                                                                                                                                                                                                    case 'k': letter="K"; break;
+                                                                                                                                                                                                            }
+
+                                                                                                                                                                                                                    if(capture)
+                                                                                                                                                                                                                                return letter + "x" + square;
+
+                                                                                                                                                                                                                                        return letter + square;
+                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                            }

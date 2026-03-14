@@ -1,33 +1,39 @@
-#board{
+body{
+    font-family:Arial, Helvetica, sans-serif;
+    margin:20px;
+    }
 
+    #board{
     display:grid;
-    grid-template-columns:repeat(8,80px);
-    width:640px;
-
+    grid-template-columns:repeat(8,70px);
+    grid-template-rows:repeat(8,70px);
+    border:3px solid black;
+    width:560px;
     }
 
     .square{
-
-    width:80px;
-    height:80px;
-
+    width:70px;
+    height:70px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
     }
 
     .light{
-
     background:#f0d9b5;
-
     }
 
     .dark{
-
     background:#b58863;
-
     }
 
     .piece{
+    width:55px;
+    height:55px;
+    cursor:pointer;
+    }
 
-    width:80px;
-    height:80px;
-
+    #history{
+    margin-top:20px;
+    font-size:18px;
     }
