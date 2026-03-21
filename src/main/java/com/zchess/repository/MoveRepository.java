@@ -1,9 +1,10 @@
 package com.zchess.repository;
 
-import com.zchess.entity.Move;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
+import com.zchess.entity.Move;
 
 public interface MoveRepository extends JpaRepository<Move, Long> {
 

@@ -1,15 +1,16 @@
 package com.zchess.service;
 
-import com.zchess.engine.Board;
-import com.zchess.engine.MoveValidator;
-import com.zchess.engine.GameState;
-import com.zchess.engine.CheckValidator;
-import com.zchess.engine.ChessNotation;
-import com.zchess.entity.Move;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.springframework.stereotype.Service;
+
+import com.zchess.engine.Board;
+import com.zchess.engine.CheckValidator;
+import com.zchess.engine.ChessNotation;
+import com.zchess.engine.GameState;
+import com.zchess.engine.MoveValidator;
+import com.zchess.entity.Move;
 
 @Service
 public class MoveService {

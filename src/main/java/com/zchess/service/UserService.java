@@ -1,12 +1,13 @@
 package com.zchess.service;
 
-import com.zchess.entity.User;
-import com.zchess.repository.UserRepository;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import com.zchess.entity.User;
+import com.zchess.repository.UserRepository;
 
 @Service
 public class UserService {

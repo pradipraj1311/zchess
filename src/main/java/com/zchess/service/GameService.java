@@ -1,8 +1,9 @@
 
 package com.zchess.service;
 
-import com.zchess.engine.Board;
 import org.springframework.stereotype.Service;
+
+import com.zchess.engine.Board;
 
 @Service
 public class GameService {
