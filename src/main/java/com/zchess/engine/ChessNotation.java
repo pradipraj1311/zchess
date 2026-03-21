@@ -2,37 +2,35 @@ package com.zchess.engine;
 
 public class ChessNotation {
 
-    public static String convert(String piece, int fr, int fc, int tr, int tc, boolean capture){
+    public static String convert(String piece, int fr, int fc, int tr, int tc, boolean capture) {
 
-            char file = (char) ('a' + tc);
-                    int rank = 8 - tr;
+        char file = (char) ('a' + tc);
+        int rank = 8 - tr;
 
-                            String square = "" + file + rank;
+        String square = "" + file + rank;
 
-                                    // Pawn moves
-                                            if(piece.equals("wp") || piece.equals("bp")){
+        // Pawn
+        if (piece.charAt(1) == 'p') {
 
-                                                        if(capture){
-                                                                        char fromFile = (char) ('a' + fc);
-                                                                                        return fromFile + "x" + square;
-                                                                                                    }
+            if (capture) {
+                char fromFile = (char) ('a' + fc);
+                return fromFile + "x" + square;
+            }
 
-                                                                                                                return square;
-                                                                                                                        }
+            return square;
+        }
 
-                                                                                                                                String letter="";
+        String letter = switch (piece.charAt(1)) {
+            case 'r' -> "R";
+            case 'n' -> "N";
+            case 'b' -> "B";
+            case 'q' -> "Q";
+            case 'k' -> "K";
+            default -> "";
+        };
 
-                                                                                                                                        switch(piece.charAt(1)){
-                                                                                                                                                    case 'r': letter="R"; break;
-                                                                                                                                                                case 'n': letter="N"; break;
-                                                                                                                                                                            case 'b': letter="B"; break;
-                                                                                                                                                                                        case 'q': letter="Q"; break;
-                                                                                                                                                                                                    case 'k': letter="K"; break;
-                                                                                                                                                                                                            }
+        if (capture) return letter + "x" + square;
 
-                                                                                                                                                                                                                    if(capture)
-                                                                                                                                                                                                                                return letter + "x" + square;
-
-                                                                                                                                                                                                                                        return letter + square;
-                                                                                                                                                                                                                                            }
-                                                                                                                                                                                                                                            }
+        return letter + square;
+    }
+}

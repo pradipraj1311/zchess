@@ -4,54 +4,35 @@ public class CheckValidator {
 
     public static boolean isKingInCheck(String[][] board, boolean whiteKing) {
 
-            String king = whiteKing ? "wk" : "bk";
+        String king = whiteKing ? "wk" : "bk";
 
-                    int kr = -1;
-                            int kc = -1;
+        int kr = -1, kc = -1;
 
-                                    for(int r=0;r<8;r++){
-                                                for(int c=0;c<8;c++){
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                if (king.equals(board[r][c])) {
+                    kr = r;
+                    kc = c;
+                }
+            }
+        }
 
-                                                                if(king.equals(board[r][c])){
-                                                                                    kr=r;
-                                                                                                        kc=c;
-                                                                                                                        }
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
 
-                                                                                                                                    }
-                                                                                                                                            }
+                String piece = board[r][c];
+                if (piece == null) continue;
 
-                                                                                                                                                    for(int r=0;r<8;r++){
-                                                                                                                                                                for(int c=0;c<8;c++){
+                boolean enemy = whiteKing ? piece.startsWith("b") : piece.startsWith("w");
 
-                                                                                                                                                                                String piece = board[r][c];
+                if (enemy) {
+                    if (MoveValidator.isValidMove(piece, r, c, kr, kc, board)) {
+                        return true;
+                    }
+                }
+            }
+        }
 
-                                                                                                                                                                                                if(piece==null)
-                                                                                                                                                                                                                    continue;
-
-                                                                                                                                                                                                                                    boolean enemy = whiteKing
-                                                                                                                                                                                                                                                            ? piece.startsWith("b")
-                                                                                                                                                                                                                                                                                    : piece.startsWith("w");
-
-                                                                                                                                                                                                                                                                                                    if(enemy){
-
-                                                                                                                                                                                                                                                                                                                        boolean attack =
-                                                                                                                                                                                                                                                                                                                                                    MoveValidator.isValidMove(
-                                                                                                                                                                                                                                                                                                                                                                                        piece,
-                                                                                                                                                                                                                                                                                                                                                                                                                            r,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                c,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    kr,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        kc,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            board
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        );
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            if(attack)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return true;
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return false;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
+        return false;
+    }
+}

@@ -1,149 +1,139 @@
 package com.zchess.service;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import com.zchess.engine.*;
+import com.zchess.entity.Move;
 import org.springframework.stereotype.Service;
 
-import com.zchess.engine.Board;
-import com.zchess.engine.CheckValidator;
-import com.zchess.engine.ChessNotation;
-import com.zchess.engine.GameState;
-import com.zchess.engine.MoveValidator;
-import com.zchess.entity.Move;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class MoveService {
 
-    private static List<String> history = new ArrayList<>();
-        private static List<Move> moves = new ArrayList<>();
+    private static List<String> whiteHistory = new ArrayList<>();
+    private static List<String> blackHistory = new ArrayList<>();
+    private static List<Move> moves = new ArrayList<>();
 
+    public String[][] getBoard() {
+        return Board.getBoard();
+    }
 
-            public String[][] getBoard(){
-                    return Board.getBoard();
-                        }
+    public List<String> getWhiteHistory() {
+        return whiteHistory;
+    }
 
+    public List<String> getBlackHistory() {
+        return blackHistory;
+    }
 
-                            public List<String> getHistory(){
-                                    return history;
-                                        }
+    public String getTurn() {
+        return GameState.currentTurn;
+    }
 
+    public String[][] move(Move move) {
 
-                                            public String getTurn(){
-                                                    return GameState.currentTurn;
-                                                        }
+        String[][] board = Board.getBoard();
 
+        int fr = move.getFromRow();
+        int fc = move.getFromCol();
+        int tr = move.getToRow();
+        int tc = move.getToCol();
 
-                                                            public String[][] move(Move move){
+        String piece = board[fr][fc];
 
-                                                                    String[][] board = Board.getBoard();
+        if (piece == null) return board;
 
-                                                                            int fr = move.getFromRow();
-                                                                                    int fc = move.getFromCol();
-                                                                                            int tr = move.getToRow();
-                                                                                                    int tc = move.getToCol();
+        boolean isWhite = piece.startsWith("w");
 
-                                                                                                            String piece = board[fr][fc];
+        // turn check
+        if (isWhite && !GameState.currentTurn.equals("white")) return board;
+        if (!isWhite && !GameState.currentTurn.equals("black")) return board;
 
-                                                                                                                    if(piece == null)
-                                                                                                                                return board;
+        String target = board[tr][tc];
 
-                                                                                                                                        boolean isWhite = piece.startsWith("w");
+        // prevent own capture
+        if (target != null && target.startsWith(piece.substring(0,1))) {
+            return board;
+        }
 
-                                                                                                                                                if(isWhite && !GameState.currentTurn.equals("white"))
-                                                                                                                                                            return board;
+        // validate move
+        if (!MoveValidator.isValidMove(piece, fr, fc, tr, tc, board)) {
+            return board;
+        }
 
-                                                                                                                                                                    if(!isWhite && !GameState.currentTurn.equals("black"))
-                                                                                                                                                                                return board;
+        // apply move
+        board[tr][tc] = piece;
+        board[fr][fc] = null;
 
-                                                                                                                                                                                        boolean valid =
-                                                                                                                                                                                                        MoveValidator.isValidMove(
-                                                                                                                                                                                                                                piece,
-                                                                                                                                                                                                                                                        fr,
-                                                                                                                                                                                                                                                                                fc,
-                                                                                                                                                                                                                                                                                                        tr,
-                                                                                                                                                                                                                                                                                                                                tc,
-                                                                                                                                                                                                                                                                                                                                                        board
-                                                                                                                                                                                                                                                                                                                                                                        );
+        // king safety
+        if (CheckValidator.isKingInCheck(board, isWhite)) {
+            board[fr][fc] = piece;
+            board[tr][tc] = target;
+            return board;
+        }
 
-                                                                                                                                                                                                                                                                                                                                                                                if(!valid)
-                                                                                                                                                                                                                                                                                                                                                                                            return board;
+        // pawn promotion
+        if (piece.equals("wp") && tr == 0) board[tr][tc] = "wq";
+        if (piece.equals("bp") && tr == 7) board[tr][tc] = "bq";
 
-                                                                                                                                                                                                                                                                                                                                                                                                    String captured = board[tr][tc];
+        // save move
+        move.setPiece(piece);
+        moves.add(move);
 
-                                                                                                                                                                                                                                                                                                                                                                                                            board[tr][tc] = piece;
-                                                                                                                                                                                                                                                                                                                                                                                                                    board[fr][fc] = null;
+        boolean capture = (target != null);
 
-                                                                                                                                                                                                                                                                                                                                                                                                                            boolean kingSafe =
-                                                                                                                                                                                                                                                                                                                                                                                                                                            !CheckValidator.isKingInCheck(board,isWhite);
+        String notation = ChessNotation.convert(piece, fr, fc, tr, tc, capture);
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    if(!kingSafe){
+        if (GameState.currentTurn.equals("white")) {
+            whiteHistory.add(notation);
+        } else {
+            blackHistory.add(notation);
+        }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                board[fr][fc] = piece;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            board[tr][tc] = captured;
+        switchTurn();
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return board;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
+        return board;
+    }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        move.setPiece(piece);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                moves.add(move);
+    public void undo() {
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        // ✔ FIXED CAPTURE VARIABLE
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                boolean capture = captured != null;
+        if (moves.isEmpty()) return;
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        history.add(
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ChessNotation.convert(piece,fr,fc,tr,tc,capture)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                );
+        moves.remove(moves.size() - 1);
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        switchTurn();
+        if (GameState.currentTurn.equals("black") && !whiteHistory.isEmpty()) {
+            whiteHistory.remove(whiteHistory.size() - 1);
+        } else if (!blackHistory.isEmpty()) {
+            blackHistory.remove(blackHistory.size() - 1);
+        }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return board;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
+        Board.resetBoard();
 
+        String[][] board = Board.getBoard();
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        public void undo(){
+        for (Move m : moves) {
+            board[m.getToRow()][m.getToCol()] = m.getPiece();
+            board[m.getFromRow()][m.getFromCol()] = null;
+        }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                if(moves.isEmpty())
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return;
+        switchTurn();
+    }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    moves.remove(moves.size()-1);
+    public void reset() {
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            if(!history.isEmpty())
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        history.remove(history.size()-1);
+        moves.clear();
+        whiteHistory.clear();
+        blackHistory.clear();
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                Board.resetBoard();
+        Board.resetBoard();
+        GameState.currentTurn = "white";
+    }
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        String[][] board = Board.getBoard();
+    private void switchTurn() {
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                for(Move m : moves){
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            board[m.getToRow()][m.getToCol()] = m.getPiece();
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        board[m.getFromRow()][m.getFromCol()] = null;
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        switchTurn();
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }
-
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                public void reset(){
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        moves.clear();
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                history.clear();
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        Board.resetBoard();
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                GameState.currentTurn = "white";
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
-
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        private void switchTurn(){
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                if(GameState.currentTurn.equals("white"))
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            GameState.currentTurn = "black";
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    else
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                GameState.currentTurn = "white";
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
+        if (GameState.currentTurn.equals("white"))
+            GameState.currentTurn = "black";
+        else
+            GameState.currentTurn = "white";
+    }
+}

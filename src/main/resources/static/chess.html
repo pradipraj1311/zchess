@@ -1,38 +1,42 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-
-<title>Local Two Player Chess</title>
-
-<link rel="stylesheet" href="/chess.css">
-
+    <title>Chess Game</title>
+    <link rel="stylesheet" href="chess.css">
 </head>
 
 <body>
 
-<h1>Local Two Player Chess</h1>
-
 <h2 id="turn">Turn: white</h2>
 
-White: <span id="whiteTimer">10:00</span>
-<br>
-Black: <span id="blackTimer">10:00</span>
+<div style="display:flex; gap:50px;">
 
-<br><br>
+    <!-- BOARD -->
+    <div id="board"></div>
 
-<button onclick="resetGame()">Reset</button>
-<button onclick="undoMove()">Undo</button>
+    <!-- SIDE PANEL -->
+    <div>
 
-<br><br>
+        <h3>White Moves</h3>
+        <ul id="whiteHistory"></ul>
 
-<div id="board"></div>
+        <h3>Black Moves</h3>
+        <ul id="blackHistory"></ul>
 
-<h2>Move History</h2>
+        <br>
 
-<ul id="history"></ul>
+        <button onclick="resetGame()">Reset</button>
+        <button onclick="undoMove()">Undo</button>
 
-<script src="/chess.js"></script>
+        <h3>Timer</h3>
+        <div>White: <span id="whiteTimer">10:00</span></div>
+        <div>Black: <span id="blackTimer">10:00</span></div>
+
+    </div>
+
+</div>
+
+<script src="chess.js"></script>
 
 </body>
 </html>

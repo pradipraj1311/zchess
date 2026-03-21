@@ -1,11 +1,10 @@
 package com.zchess.controller;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.zchess.service.MoveService;
+
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/game")
@@ -13,32 +12,43 @@ public class GameController {
 
     private final MoveService moveService;
 
-        public GameController(MoveService moveService) {
-                this.moveService = moveService;
-                    }
+    public GameController(MoveService moveService) {
+        this.moveService = moveService;
+    }
 
-                        @GetMapping("/board")
-                            public String[][] board() {
-                                    return moveService.getBoard();
-                                        }
+    // Board
+    @GetMapping("/board")
+    public String[][] board() {
+        return moveService.getBoard();
+    }
 
-                                            @GetMapping("/history")
-                                                public Object history() {
-                                                        return moveService.getHistory();
-                                                            }
+    // White history
+    @GetMapping("/history/white")
+    public List<String> getWhiteHistory() {
+        return moveService.getWhiteHistory();
+    }
 
-                                                                @GetMapping("/turn")
-                                                                    public String turn() {
-                                                                            return moveService.getTurn();
-                                                                                }
+    //Black history
+    @GetMapping("/history/black")
+    public List<String> getBlackHistory() {
+        return moveService.getBlackHistory();
+    }
 
-                                                                                    @PostMapping("/reset")
-                                                                                        public void reset() {
-                                                                                                moveService.reset();
-                                                                                                    }
+    // Turn
+    @GetMapping("/turn")
+    public String turn() {
+        return moveService.getTurn();
+    }
 
-                                                                                                        @PostMapping("/undo")
-                                                                                                            public void undo() {
-                                                                                                                    moveService.undo();
-                                                                                                                        }
-                                                                                                                        }
+    // Reset
+    @PostMapping("/reset")
+    public void reset() {
+        moveService.reset();
+    }
+
+    //  Undo
+    @PostMapping("/undo")
+    public void undo() {
+        moveService.undo();
+    }
+}
