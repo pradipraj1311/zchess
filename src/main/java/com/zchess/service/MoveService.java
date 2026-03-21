@@ -30,6 +30,11 @@ public class MoveService {
         return GameState.currentTurn;
     }
 
+    // ✅ universal empty check
+    private boolean isEmpty(String cell) {
+        return cell == null || cell.trim().isEmpty();
+    }
+
     public String[][] move(Move move) {
 
         String[][] board = Board.getBoard();
@@ -41,18 +46,18 @@ public class MoveService {
 
         String piece = board[fr][fc];
 
-        if (piece == null) return board;
+        if (isEmpty(piece)) return board;
 
         boolean isWhite = piece.startsWith("w");
 
-        // turn check
+        // turn validation
         if (isWhite && !GameState.currentTurn.equals("white")) return board;
         if (!isWhite && !GameState.currentTurn.equals("black")) return board;
 
         String target = board[tr][tc];
 
-        // prevent own capture
-        if (target != null && target.startsWith(piece.substring(0,1))) {
+        // prevent self capture
+        if (!isEmpty(target) && target.startsWith(piece.substring(0, 1))) {
             return board;
         }
 
@@ -61,9 +66,9 @@ public class MoveService {
             return board;
         }
 
-        // apply move
+        //  apply move
         board[tr][tc] = piece;
-        board[fr][fc] = null;
+        board[fr][fc] = null;   
 
         // king safety
         if (CheckValidator.isKingInCheck(board, isWhite)) {
@@ -72,17 +77,19 @@ public class MoveService {
             return board;
         }
 
-        // pawn promotion
+        //  pawn promotion
         if (piece.equals("wp") && tr == 0) board[tr][tc] = "wq";
         if (piece.equals("bp") && tr == 7) board[tr][tc] = "bq";
 
-        // save move
+        //  save move
         move.setPiece(piece);
         moves.add(move);
 
-        boolean capture = (target != null);
+        //  correct capture logic
+        boolean isCapture = !isEmpty(target);
 
-        String notation = ChessNotation.convert(piece, fr, fc, tr, tc, capture);
+        //  notation
+        String notation = ChessNotation.convert(piece, fr, fc, tr, tc, isCapture);
 
         if (GameState.currentTurn.equals("white")) {
             whiteHistory.add(notation);
@@ -108,9 +115,9 @@ public class MoveService {
         }
 
         Board.resetBoard();
-
         String[][] board = Board.getBoard();
 
+        // rebuild moves
         for (Move m : moves) {
             board[m.getToRow()][m.getToCol()] = m.getPiece();
             board[m.getFromRow()][m.getFromCol()] = null;
