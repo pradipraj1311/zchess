@@ -1,5 +1,4 @@
 package com.zchess.service;
-
 import com.zchess.engine.*;
 import com.zchess.entity.Move;
 import org.springframework.stereotype.Service;
@@ -30,12 +29,12 @@ public class MoveService {
         return GameState.currentTurn;
     }
 
-    // ✅ universal empty check
+    //  universal empty check
     private boolean isEmpty(String cell) {
         return cell == null || cell.trim().isEmpty();
     }
 
-    public String[][] move(Move move) {
+    public String[][] move(Long gameId,Move move) {
 
         String[][] board = Board.getBoard();
 
@@ -90,6 +89,12 @@ public class MoveService {
 
         //  notation
         String notation = ChessNotation.convert(piece, fr, fc, tr, tc, isCapture);
+        boolean opponentIsWhite = !isWhite;
+        boolean isCheck = CheckValidator.isKingInCheck(board, opponentIsWhite);
+
+        if (isCheck) {
+            notation += "+";
+        }
 
         if (GameState.currentTurn.equals("white")) {
             whiteHistory.add(notation);

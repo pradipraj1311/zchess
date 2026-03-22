@@ -1,16 +1,23 @@
 package com.zchess.controller;
 
 import org.springframework.stereotype.Controller;
+
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 public class HomeController {
 
-    @GetMapping("/")
-        public String home(){
+	@GetMapping("/")
+	public String home() {
 
-                return "redirect:/chess.html";
+		return "redirect:/chess.html";
 
-                    }
+	}
+	@GetMapping("api/health")
+	@ResponseBody
+	public String health() {
+		return "Application is running";
+	}
 
-                    }
+}

@@ -1,5 +1,8 @@
 package com.zchess.entity;
 public enum Role {
         ADMIN,
-            PLAYER
+            USER;
+	public String getAuthority() {
+		return "ROLE_"+this.name();
+	}
 }
