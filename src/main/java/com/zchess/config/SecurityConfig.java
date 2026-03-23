@@ -3,34 +3,51 @@ package com.zchess.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
-@EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
-        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-                http
-                            .csrf(csrf -> csrf.disable())
-                                        .authorizeHttpRequests(auth -> auth
-                                                            .requestMatchers("/api/auth/**").permitAll()
-                                                                                .requestMatchers("/h2-console/**").permitAll()
-                                                                                            
-                                                                                                    .anyRequest().permitAll()
-                                                                                                                )
-                                                                                                                            .headers(headers -> headers.frameOptions(frame -> frame.disable()))
-                                                                                                                                        .httpBasic();
+        http
+            // disable CSRF for REST API
+            .csrf(csrf -> csrf.disable())
 
-                                                                                                                                                return http.build();
-                                                                                                                                                    }
+            // authorization rules
+            .authorizeHttpRequests(auth -> auth
 
-                                                                                                                                                        @Bean
-                                                                                                                                                            public PasswordEncoder passwordEncoder() {
-                                                                                                                                                                    return new BCryptPasswordEncoder();
-                                                                                                                                                                        }
-                                                                                                                                                                        }
+                // allow user APIs (register + login)
+                .requestMatchers("/api/users/**").permitAll()
+
+                // allow frontend files
+                .requestMatchers(
+                        "/",
+                        "/chess.html",
+                        "/chess.js",
+                        "/chess.css",
+                        "/pieces/**"
+                ).permitAll()
+
+                // allow health check
+                .requestMatchers("/api/health").permitAll()
+
+                // all other APIs require authentication
+                .anyRequest().authenticated()
+            )
+
+            // enable basic auth (Postman testing)
+            .httpBasic();
+
+        return http.build();
+    }
+
+    // password encoder (required for MySQL user table)
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}

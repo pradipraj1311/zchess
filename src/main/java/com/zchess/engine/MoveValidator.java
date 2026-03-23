@@ -4,7 +4,7 @@ public class MoveValidator {
 
     public static boolean isValidMove(String piece, int fr, int fc, int tr, int tc, String[][] board) {
 
-        if (piece == null || piece.isEmpty()) return false;
+        if (piece == null) return false;
 
         char type = piece.charAt(1);
 

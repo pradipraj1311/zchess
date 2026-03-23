@@ -1,10 +1,16 @@
 package com.zchess.service;
-import com.zchess.engine.*;
-import com.zchess.entity.Move;
-import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import org.springframework.stereotype.Service;
+
+import com.zchess.engine.Board;
+import com.zchess.engine.CheckValidator;
+import com.zchess.engine.ChessNotation;
+import com.zchess.engine.GameState;
+import com.zchess.engine.MoveValidator;
+import com.zchess.entity.Move;
 
 @Service
 public class MoveService {
@@ -29,12 +35,9 @@ public class MoveService {
         return GameState.currentTurn;
     }
 
-    //  universal empty check
-    private boolean isEmpty(String cell) {
-        return cell == null || cell.trim().isEmpty();
-    }
-
-    public String[][] move(Long gameId,Move move) {
+    // ================= MOVE =================
+    // NOW returns boolean: true = valid move, false = invalid
+    public boolean move(Long gameId, Move move) {
 
         String[][] board = Board.getBoard();
 
@@ -45,107 +48,120 @@ public class MoveService {
 
         String piece = board[fr][fc];
 
-        if (isEmpty(piece)) return board;
+        // no piece at source
+        if (piece == null) return false;
 
         boolean isWhite = piece.startsWith("w");
 
         // turn validation
-        if (isWhite && !GameState.currentTurn.equals("white")) return board;
-        if (!isWhite && !GameState.currentTurn.equals("black")) return board;
+        if (isWhite && !GameState.currentTurn.equals("white")) return false;
+        if (!isWhite && !GameState.currentTurn.equals("black")) return false;
 
         String target = board[tr][tc];
 
-        // prevent self capture
-        if (!isEmpty(target) && target.startsWith(piece.substring(0, 1))) {
-            return board;
-        }
+        // prevent own capture
+        if (target != null && target.startsWith(piece.substring(0, 1))) return false;
 
         // validate move
-        if (!MoveValidator.isValidMove(piece, fr, fc, tr, tc, board)) {
-            return board;
+        try {
+            if (!MoveValidator.isValidMove(piece, fr, fc, tr, tc, board)) {
+                return false;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
 
-        //  apply move
+        // apply move temporarily
         board[tr][tc] = piece;
-        board[fr][fc] = null;   
+        board[fr][fc] = null;
 
-        // king safety
-        if (CheckValidator.isKingInCheck(board, isWhite)) {
+        // king safety check - rollback if king in check
+        try {
+            if (CheckValidator.isKingInCheck(board, isWhite)) {
+                board[fr][fc] = piece;
+                board[tr][tc] = target;
+                return false;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
             board[fr][fc] = piece;
             board[tr][tc] = target;
-            return board;
+            return false;
         }
 
-        //  pawn promotion
+        // pawn promotion
         if (piece.equals("wp") && tr == 0) board[tr][tc] = "wq";
         if (piece.equals("bp") && tr == 7) board[tr][tc] = "bq";
 
-        //  save move
-        move.setPiece(piece);
+        // save move (store promoted piece if needed)
+        move.setPiece(board[tr][tc]);
         moves.add(move);
 
-        //  correct capture logic
-        boolean isCapture = !isEmpty(target);
-
-        //  notation
+        // notation
+        boolean isCapture = (target != null);
         String notation = ChessNotation.convert(piece, fr, fc, tr, tc, isCapture);
-        boolean opponentIsWhite = !isWhite;
-        boolean isCheck = CheckValidator.isKingInCheck(board, opponentIsWhite);
 
-        if (isCheck) {
-            notation += "+";
+        // check detection for opponent
+        boolean opponentIsWhite = !isWhite;
+        try {
+            if (CheckValidator.isKingInCheck(board, opponentIsWhite)) {
+                notation += "+";
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
-        if (GameState.currentTurn.equals("white")) {
+        // save history
+        if (isWhite) {
             whiteHistory.add(notation);
         } else {
             blackHistory.add(notation);
         }
 
-        switchTurn();
+        System.out.println("MOVE: " + fr + "," + fc + " -> " + tr + "," + tc);
+        System.out.println("PIECE: " + piece);
 
-        return board;
+        // switch turn
+        GameState.switchTurn();
+
+        return true;
     }
 
+    // ================= UNDO =================
     public void undo() {
 
         if (moves.isEmpty()) return;
 
-        moves.remove(moves.size() - 1);
+        Move lastMove = moves.remove(moves.size() - 1);
 
-        if (GameState.currentTurn.equals("black") && !whiteHistory.isEmpty()) {
-            whiteHistory.remove(whiteHistory.size() - 1);
-        } else if (!blackHistory.isEmpty()) {
-            blackHistory.remove(blackHistory.size() - 1);
+        // remove from history (switch turn first to know who moved last)
+        if (GameState.currentTurn.equals("white")) {
+            // black just moved
+            if (!blackHistory.isEmpty()) blackHistory.remove(blackHistory.size() - 1);
+        } else {
+            // white just moved
+            if (!whiteHistory.isEmpty()) whiteHistory.remove(whiteHistory.size() - 1);
         }
 
+        // rebuild board from scratch
         Board.resetBoard();
         String[][] board = Board.getBoard();
 
-        // rebuild moves
         for (Move m : moves) {
             board[m.getToRow()][m.getToCol()] = m.getPiece();
             board[m.getFromRow()][m.getFromCol()] = null;
         }
 
-        switchTurn();
+        GameState.switchTurn();
     }
 
+    // ================= RESET =================
     public void reset() {
-
         moves.clear();
         whiteHistory.clear();
         blackHistory.clear();
-
         Board.resetBoard();
-        GameState.currentTurn = "white";
-    }
-
-    private void switchTurn() {
-
-        if (GameState.currentTurn.equals("white"))
-            GameState.currentTurn = "black";
-        else
-            GameState.currentTurn = "white";
+        GameState.reset();
     }
 }

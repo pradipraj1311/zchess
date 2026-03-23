@@ -1,42 +1,61 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Chess Game</title>
+    <title>zChess</title>
     <link rel="stylesheet" href="chess.css">
 </head>
-
 <body>
 
-<h2 id="turn">Turn: white</h2>
+<!-- ROLE SCREEN -->
+<div id="roleScreen" class="center">
+    <h1>zChess</h1>
+    <button onclick="selectRole('player')">Player</button>
+    <button onclick="selectRole('admin')">Admin</button>
+</div>
 
-<div style="display:flex; gap:50px;">
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" class="center hidden">
+    <h2>Login</h2>
+    <input id="username" placeholder="Username">
+    <input id="password" type="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <button onclick="register()">Register</button>
+</div>
 
-    <!-- BOARD -->
-    <div id="board"></div>
+<!-- GAME SCREEN -->
+<div id="gameScreen" class="hidden">
 
-    <!-- SIDE PANEL -->
-    <div>
+    <div class="top-bar">
+        <h2 id="turn">Turn: white</h2>
+    </div>
 
-        <h3>White Moves</h3>
-        <ul id="whiteHistory"></ul>
+    <div class="container">
 
-        <h3>Black Moves</h3>
-        <ul id="blackHistory"></ul>
+        <!-- BOARD -->
+        <div id="board"></div>
 
-        <br>
+        <!-- SIDE PANEL -->
+        <div class="side">
 
-        <button onclick="resetGame()">Reset</button>
-        <button onclick="undoMove()">Undo</button>
+            <h3>White Moves</h3>
+            <ul id="whiteHistory"></ul>
 
-        <h3>Timer</h3>
-        <div>White: <span id="whiteTimer">10:00</span></div>
-        <div>Black: <span id="blackTimer">10:00</span></div>
+            <h3>Black Moves</h3>
+            <ul id="blackHistory"></ul>
+
+            <button onclick="resetGame()">Reset</button>
+            <button onclick="undoMove()">Undo</button>
+
+            <h3>Timer</h3>
+            <p>White: <span id="whiteTimer">10:00</span></p>
+            <p>Black: <span id="blackTimer">10:00</span></p>
+
+        </div>
 
     </div>
 
 </div>
 
 <script src="chess.js"></script>
-
 </body>
 </html>

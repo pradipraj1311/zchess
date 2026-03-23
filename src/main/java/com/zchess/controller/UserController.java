@@ -4,6 +4,7 @@ import com.zchess.entity.User;
 import com.zchess.service.UserService;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 
@@ -12,31 +13,49 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final PasswordEncoder passwordEncoder;
 
-    //  constructor injection (best practice)
-    public UserController(UserService userService) {
+    public UserController(UserService userService, PasswordEncoder passwordEncoder) {
         this.userService = userService;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    //  REGISTER USER
+    // register user
     @PostMapping("/register")
     public User registerUser(@RequestBody User user) {
         return userService.registerUser(user);
     }
 
-    //  GET ALL USERS
+    // login user
+    @PostMapping("/login")
+    public User login(@RequestBody User user) {
+
+        User dbUser = userService.findByUsername(user.getUsername());
+
+        if (dbUser == null) {
+            throw new RuntimeException("User not found");
+        }
+
+        if (!passwordEncoder.matches(user.getPassword(), dbUser.getPassword())) {
+            throw new RuntimeException("Invalid password");
+        }
+
+        return dbUser;
+    }
+
+    // get all users
     @GetMapping
     public List<User> getAllUsers() {
         return userService.getAllUsers();
     }
 
-    //  GET USER BY ID
+    // get user by id
     @GetMapping("/{id}")
     public User getUser(@PathVariable Long id) {
         return userService.getUser(id);
     }
 
-    //  DELETE USER
+    // delete user
     @DeleteMapping("/{id}")
     public String deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);

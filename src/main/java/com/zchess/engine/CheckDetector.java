@@ -2,44 +2,54 @@ package com.zchess.engine;
 
 public class CheckDetector {
 
-	public static boolean isKingInCheck(String[][] board, char color) {
+    public static boolean isKingInCheck(String[][] board, char color) {
 
-		int kr = -1;
-		int kc = -1;
+        int kr = -1;
+        int kc = -1;
 
-		String king = color + "k";
+        String king = color + "k";
 
-		for (int r = 0; r < 8; r++)
-			for (int c = 0; c < 8; c++)
-				if (board[r][c].equals(king)) {
-					kr = r;
-					kc = c;
-				}
+        // find king position safely
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
 
-		char opponent = color == 'w' ? 'b' : 'w';
+                String cell = board[r][c];
 
-		for (int r = 0; r < 8; r++) {
+                if (cell != null && cell.equals(king)) {
+                    kr = r;
+                    kc = c;
+                }
+            }
+        }
 
-			for (int c = 0; c < 8; c++) {
+        // if king not found, return false to avoid crash
+        if (kr == -1 || kc == -1) return false;
 
-				String p = board[r][c];
+        char opponent = (color == 'w') ? 'b' : 'w';
 
-				if (p.isEmpty())
-					continue;
+        // check all opponent pieces
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
 
-				if (p.charAt(0) == opponent) {
+                String p = board[r][c];
 
-					if (MoveValidator.isValidMove(p, r, c, kr, kc, board))
-						return true;
+                if (p == null) continue;
 
-				}
+                // check only opponent pieces
+                if (p.charAt(0) == opponent) {
 
-			}
+                    try {
+                        // check if opponent can attack king
+                        if (MoveValidator.isValidMove(p, r, c, kr, kc, board)) {
+                            return true;
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
 
-		}
-
-		return false;
-
-	}
-
+        return false;
+    }
 }

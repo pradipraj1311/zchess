@@ -2,25 +2,37 @@ package com.zchess.engine;
 
 public class Board {
 
-	private static String[][] board;
+    // main chess board (8x8)
+    private static String[][] board;
 
-	static {
-		resetBoard();
-	}
+    // initialize board when class loads
+    static {
+        resetBoard();
+    }
 
-	public static String[][] getBoard() {
-		return board;
-	}
+    // return current board
+    public static String[][] getBoard() {
+        return board;
+    }
 
-	public static void resetBoard() {
+    // reset board to initial chess position
+    public static void resetBoard() {
 
-		board = new String[][] {
+        board = new String[][] {
 
-				{ "br", "bn", "bb", "bq", "bk", "bb", "bn", "br" }, { "bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp" },
-				{ "", "", "", "", "", "", "", "" }, { "", "", "", "", "", "", "", "" },
-				{ "", "", "", "", "", "", "", "" }, { "", "", "", "", "", "", "", "" },
-				{ "wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp" }, { "wr", "wn", "wb", "wq", "wk", "wb", "wn", "wr" }
+            // black pieces
+            { "br", "bn", "bb", "bq", "bk", "bb", "bn", "br" },
+            { "bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp" },
 
-		};
-	}
+            // empty squares (use null)
+            { null, null, null, null, null, null, null, null },
+            { null, null, null, null, null, null, null, null },
+            { null, null, null, null, null, null, null, null },
+            { null, null, null, null, null, null, null, null },
+
+            // white pieces
+            { "wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp" },
+            { "wr", "wn", "wb", "wq", "wk", "wb", "wn", "wr" }
+        };
+    }
 }
