@@ -3,9 +3,10 @@ package com.zchess.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
-import com.zchess.entity.Game;
 import com.zchess.entity.Move;
 import com.zchess.service.GameService;
 import com.zchess.service.MoveService;
@@ -22,28 +23,49 @@ public class GameController {
         this.gameService = gameService;
     }
 
-    // create a new game
+    // ================= GAME CRUD =================
+
+    // create game - logged in user automatically playerWhite bane
     @PostMapping
-    public Game createGame(@RequestBody Game game) {
-        return gameService.createGame(game);
+    public ResponseEntity<?> createGame(Authentication auth) {
+        String username = auth.getName();
+        return ResponseEntity.ok(gameService.createGame(username));
     }
 
-    // get all games
+    // get ALL games - ADMIN only
     @GetMapping
-    public List<Game> getAllGames() {
-        return gameService.getAllGames();
+    public ResponseEntity<?> getAllGames(Authentication auth) {
+        boolean isAdmin = auth.getAuthorities()
+                .contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        if (!isAdmin) {
+            return ResponseEntity.status(403).body("Access denied: Admins only");
+        }
+        return ResponseEntity.ok(gameService.getAllGames());
+    }
+
+    // get MY games - logged in user potani games joi shake
+    @GetMapping("/my")
+    public ResponseEntity<?> getMyGames(Authentication auth) {
+        String username = auth.getName();
+        return ResponseEntity.ok(gameService.getGamesByUser(username));
     }
 
     // get game by id
     @GetMapping("/{id}")
-    public Game getGame(@PathVariable Long id) {
-        return gameService.getGame(id);
+    public ResponseEntity<?> getGame(@PathVariable Long id) {
+        return ResponseEntity.ok(gameService.getGame(id));
     }
 
-    // delete game
+    // delete game - ADMIN only
     @DeleteMapping("/{id}")
-    public void deleteGame(@PathVariable Long id) {
+    public ResponseEntity<?> deleteGame(@PathVariable Long id, Authentication auth) {
+        boolean isAdmin = auth.getAuthorities()
+                .contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        if (!isAdmin) {
+            return ResponseEntity.status(403).body("Access denied: Admins only");
+        }
         gameService.deleteGame(id);
+        return ResponseEntity.ok("Game deleted");
     }
 
     // ================= GAME PLAY =================

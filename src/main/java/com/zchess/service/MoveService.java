@@ -10,7 +10,10 @@ import com.zchess.engine.CheckValidator;
 import com.zchess.engine.ChessNotation;
 import com.zchess.engine.GameState;
 import com.zchess.engine.MoveValidator;
+import com.zchess.entity.Game;
 import com.zchess.entity.Move;
+import com.zchess.repository.GameRepository;
+import com.zchess.repository.MoveRepository;
 
 @Service
 public class MoveService {
@@ -18,6 +21,15 @@ public class MoveService {
     private static List<String> whiteHistory = new ArrayList<>();
     private static List<String> blackHistory = new ArrayList<>();
     private static List<Move> moves = new ArrayList<>();
+    private static int moveNumber = 0;
+
+    private final MoveRepository moveRepository;
+    private final GameRepository gameRepository;
+
+    public MoveService(MoveRepository moveRepository, GameRepository gameRepository) {
+        this.moveRepository = moveRepository;
+        this.gameRepository = gameRepository;
+    }
 
     public String[][] getBoard() {
         return Board.getBoard();
@@ -36,7 +48,6 @@ public class MoveService {
     }
 
     // ================= MOVE =================
-    // NOW returns boolean: true = valid move, false = invalid
     public boolean move(Long gameId, Move move) {
 
         String[][] board = Board.getBoard();
@@ -48,7 +59,6 @@ public class MoveService {
 
         String piece = board[fr][fc];
 
-        // no piece at source
         if (piece == null) return false;
 
         boolean isWhite = piece.startsWith("w");
@@ -64,9 +74,7 @@ public class MoveService {
 
         // validate move
         try {
-            if (!MoveValidator.isValidMove(piece, fr, fc, tr, tc, board)) {
-                return false;
-            }
+            if (!MoveValidator.isValidMove(piece, fr, fc, tr, tc, board)) return false;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -76,7 +84,7 @@ public class MoveService {
         board[tr][tc] = piece;
         board[fr][fc] = null;
 
-        // king safety check - rollback if king in check
+        // king safety check - rollback if needed
         try {
             if (CheckValidator.isKingInCheck(board, isWhite)) {
                 board[fr][fc] = piece;
@@ -94,33 +102,49 @@ public class MoveService {
         if (piece.equals("wp") && tr == 0) board[tr][tc] = "wq";
         if (piece.equals("bp") && tr == 7) board[tr][tc] = "bq";
 
-        // save move (store promoted piece if needed)
-        move.setPiece(board[tr][tc]);
-        moves.add(move);
-
         // notation
         boolean isCapture = (target != null);
         String notation = ChessNotation.convert(piece, fr, fc, tr, tc, isCapture);
 
         // check detection for opponent
-        boolean opponentIsWhite = !isWhite;
         try {
-            if (CheckValidator.isKingInCheck(board, opponentIsWhite)) {
+            if (CheckValidator.isKingInCheck(board, !isWhite)) {
                 notation += "+";
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        // save history
+        // move number
+        moveNumber++;
+
+        // set move fields
+        move.setPiece(board[tr][tc]);
+        move.setNotation(notation);
+        move.setMoveNumber(moveNumber);
+
+        // link to game and SAVE TO DATABASE
+        try {
+            Game game = gameRepository.findById(gameId)
+                    .orElseThrow(() -> new RuntimeException("Game not found"));
+            move.setGame(game);
+            moveRepository.save(move); // DB ma save
+        } catch (Exception e) {
+            System.err.println("Error saving move to DB: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        // in-memory list for undo
+        moves.add(move);
+
+        // history
         if (isWhite) {
             whiteHistory.add(notation);
         } else {
             blackHistory.add(notation);
         }
 
-        System.out.println("MOVE: " + fr + "," + fc + " -> " + tr + "," + tc);
-        System.out.println("PIECE: " + piece);
+        System.out.println("MOVE SAVED: " + fr + "," + fc + " -> " + tr + "," + tc + " | " + notation);
 
         // switch turn
         GameState.switchTurn();
@@ -134,20 +158,27 @@ public class MoveService {
         if (moves.isEmpty()) return;
 
         Move lastMove = moves.remove(moves.size() - 1);
+        moveNumber--;
 
-        // remove from history (switch turn first to know who moved last)
+        // DB thi delete
+        try {
+            if (lastMove.getId() != null) {
+                moveRepository.deleteById(lastMove.getId());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // history remove
         if (GameState.currentTurn.equals("white")) {
-            // black just moved
             if (!blackHistory.isEmpty()) blackHistory.remove(blackHistory.size() - 1);
         } else {
-            // white just moved
             if (!whiteHistory.isEmpty()) whiteHistory.remove(whiteHistory.size() - 1);
         }
 
-        // rebuild board from scratch
+        // rebuild board from remaining moves
         Board.resetBoard();
         String[][] board = Board.getBoard();
-
         for (Move m : moves) {
             board[m.getToRow()][m.getToCol()] = m.getPiece();
             board[m.getFromRow()][m.getFromCol()] = null;
@@ -161,6 +192,7 @@ public class MoveService {
         moves.clear();
         whiteHistory.clear();
         blackHistory.clear();
+        moveNumber = 0;
         Board.resetBoard();
         GameState.reset();
     }

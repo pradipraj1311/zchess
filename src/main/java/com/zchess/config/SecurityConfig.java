@@ -12,40 +12,35 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
         http
-            // disable CSRF for REST API
             .csrf(csrf -> csrf.disable())
-
-            // authorization rules
             .authorizeHttpRequests(auth -> auth
 
-                // allow user APIs (register + login)
-                .requestMatchers("/api/users/**").permitAll()
+                // allow register and login without auth
+                .requestMatchers("/api/users/register").permitAll()
+                .requestMatchers("/api/users/login").permitAll()
 
                 // allow frontend files
                 .requestMatchers(
-                        "/",
-                        "/chess.html",
-                        "/chess.js",
-                        "/chess.css",
-                        "/pieces/**"
+                    "/",
+                    "/chess.html",
+                    "/chess.js",
+                    "/chess.css",
+                    "/pieces/**"
                 ).permitAll()
 
                 // allow health check
                 .requestMatchers("/api/health").permitAll()
 
-                // all other APIs require authentication
+                // everything else needs login
                 .anyRequest().authenticated()
             )
-
-            // enable basic auth (Postman testing)
-            .httpBasic();
+            // basic auth for Postman testing
+            .httpBasic(httpBasic -> {});
 
         return http.build();
     }
 
-    // password encoder (required for MySQL user table)
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
