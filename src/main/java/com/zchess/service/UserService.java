@@ -2,29 +2,35 @@ package com.zchess.service;
 
 import java.util.List;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 import org.springframework.stereotype.Service;
 
 import com.zchess.entity.User;
 import com.zchess.repository.UserRepository;
 
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RatingService ratingService;
 
     // constructor injection
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,RatingService ratingService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+    this.ratingService=ratingService;
     }
 
     // register user with encrypted password
     public User registerUser(User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        return userRepository.save(user);
+       User saved=userRepository.save(user);
+       
+        ratingService.createRating(saved);
+        return saved;
     }
 
     // get all users

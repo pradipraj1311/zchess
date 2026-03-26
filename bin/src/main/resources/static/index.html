@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>ZChess</title>
+
+<style>
+body{font-family:Arial;text-align:center}
+table{border-collapse:collapse;margin:auto}
+td{width:70px;height:70px}
+.light{background:#f0d9b5}
+.dark{background:#769656}
+img{width:60px;height:60px}
+</style>
+
+</head>
+<body>
+
+<h1>ZChess</h1>
+
+<button onclick="createGame()">Create Game</button>
+<h3 id="turn"></h3>
+
+<table id="board"></table>
+
+<script>
+
+let gameId=1;
+let selected=null;
+
+function createGame(){
+// fetch("/api/game/create")
+fetch("/api/game/create",{
+      method:"POST"
+      })
+  .then(r=>r.json())
+   .then(d=>{
+      gameId=d.id;
+         loadBoard();
+          });
+          }
+
+          function loadBoard(){
+           fetch("/api/game/"+gameId)
+            .then(r=>r.json())
+             .then(d=>{
+                document.getElementById("turn").innerText="Turn: "+d.currentTurn;
+
+                   let rows=d.boardState.split(",");
+                      let board=document.getElementById("board");
+                         board.innerHTML="";
+
+                            for(let i=0;i<8;i++){
+                                let tr=document.createElement("tr");
+
+                                    for(let j=0;j<8;j++){
+                                          let idx=i*8+j;
+                                                let td=document.createElement("td");
+                                                      td.className=(i+j)%2==0?"light":"dark";
+
+                                                            let p=rows[idx];
+                                                                  if(p!="."){
+                                                                          let img=document.createElement("img");
+                                                                                  img.src="pieces/"+p+".svg";
+                                                                                          td.appendChild(img);
+                                                                                                }
+
+                                                                                                      td.onclick=()=>clickCell(idx);
+                                                                                                            tr.appendChild(td);
+                                                                                                                }
+                                                                                                                    board.appendChild(tr);
+                                                                                                                       }
+                                                                                                                        });
+                                                                                                                        }
+
+                                                                                                                        function clickCell(i){
+                                                                                                                         if(selected==null){
+                                                                                                                            selected=i;
+                                                                                                                             }else{
+                                                                                                                                fetch("/api/move/"+gameId+"?from="+selected+"&to="+i,{
+                                                                                                                                     method:"POST"
+                                                                                                                                        }).then(()=>{
+                                                                                                                                             selected=null;
+                                                                                                                                                  loadBoard();
+                                                                                                                                                     });
+                                                                                                                                                      }
+                                                                                                                                                      }
+
+                                                                                                                                                      createGame();
+                                                                                                                                                      </script>
+
+                                                                                                                                                      </body>
+                                                                                                                                                      </html>

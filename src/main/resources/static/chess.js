@@ -1,46 +1,76 @@
 /* ================= GLOBAL STATE ================= */
-
-let gameId = null;
-let selected = null;
-let boardState = [];
+let gameId = null, selected = null, boardState = [];
+let currentUser = null, authHeader = null;
+let whiteTime = 600, blackTime = 600, timerInterval = null, currentTurn = "white";
 
 /* ================= AUTH ================= */
+
+function goBack() {
+    document.getElementById("loginScreen").classList.add("hidden");
+    document.getElementById("roleScreen").classList.remove("hidden");
+}
 
 function selectRole(role) {
     document.getElementById("roleScreen").classList.add("hidden");
     document.getElementById("loginScreen").classList.remove("hidden");
+    document.getElementById("loginScreen").dataset.role = role;
+
+    const isAdmin = role === 'admin';
+    document.getElementById("loginTitle").innerText = isAdmin ? "Admin Login" : "Player Login";
+    document.getElementById("registerBtn").style.display = isAdmin ? "none" : "block";
 }
 
 function register() {
-    const username = document.getElementById("username").value;
-    const password = document.getElementById("password").value;
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+    if (!username || !password) { alert("Username and password required!"); return; }
 
     fetch("/api/users/register", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ username, password })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password, role: "USER" })
     })
-    .then(() => alert("User registered!"));
+    .then(res => { if (!res.ok) throw new Error("Failed"); return res.json(); })
+    .then(() => alert("Registered! Please login."))
+    .catch(() => alert("Registration failed! Username may already exist."));
 }
 
 function login() {
-    const username = document.getElementById("username").value;
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const role = document.getElementById("loginScreen").dataset.role || 'player';
+    if (!username || !password) { alert("Username and password required!"); return; }
 
-    fetch("/api/users")
-        .then(res => res.json())
-        .then(users => {
-            const user = users.find(u => u.username === username);
+    authHeader = "Basic " + btoa(username + ":" + password);
+    currentUser = username;
 
-            if (!user) {
-                alert("User not found! Register first.");
-                return;
-            }
+    fetch("/api/users", { headers: { "Authorization": authHeader } })
+    .then(res => { if (!res.ok) throw new Error("Invalid"); return res.json(); })
+    .then(() => {
+        sessionStorage.setItem("authHeader", authHeader);
+        sessionStorage.setItem("currentUser", username);
+        document.getElementById("loginScreen").classList.add("hidden");
 
-            document.getElementById("loginScreen").classList.add("hidden");
-            document.getElementById("gameScreen").classList.remove("hidden");
+        if (role === 'admin') {
+            window.location.href = "/admin.html";
+            return;
+        }
 
-            createGame();
-        });
+        document.getElementById("gameScreen").classList.remove("hidden");
+        document.getElementById("usernameLabel").innerText = username;
+        loadRating();
+        createGame();
+    })
+    .catch(() => alert("Login failed! Check credentials."));
+}
+
+/* ================= RATING ================= */
+
+function loadRating() {
+    fetch("/api/ratings/me", { headers: { "Authorization": authHeader } })
+    .then(res => res.json())
+    .then(data => { document.getElementById("ratingDisplay").innerText = data.rating || 1000; })
+    .catch(() => { document.getElementById("ratingDisplay").innerText = "1000"; });
 }
 
 /* ================= GAME INIT ================= */
@@ -48,304 +78,188 @@ function login() {
 function createGame() {
     fetch("/api/games", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({})
+        headers: { "Content-Type": "application/json", "Authorization": authHeader }
     })
-    .then(res => {
-        if (!res.ok) throw new Error("Game creation failed");
-        return res.json();
-    })
-    .then(game => {
-        gameId = game.id;
-        console.log("Game created:", gameId);
-        initGame();
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Failed to create game");
-    });
+    .then(res => { if (!res.ok) throw new Error("Failed"); return res.json(); })
+    .then(game => { gameId = game.id; initGame(); startTimer(); })
+    .catch(err => alert("Failed to create game: " + err.message));
 }
 
 function initGame() {
     if (!gameId) return;
-
-    loadBoard();
-    loadHistory();
-    loadTurn();
+    loadBoard(); loadHistory(); loadTurn();
 }
 
 /* ================= BOARD ================= */
 
 function loadBoard() {
-    fetch(`/api/games/${gameId}/board`)
-        .then(res => res.json())
-        .then(board => {
-            boardState = board;
-            drawBoard(board);
-        });
+    fetch(`/api/games/${gameId}/board`, { headers: { "Authorization": authHeader } })
+    .then(res => res.json())
+    .then(board => { boardState = board; drawBoard(board); });
 }
 
 function drawBoard(board) {
     const boardDiv = document.getElementById("board");
     boardDiv.innerHTML = "";
-
     for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
-
             const sq = document.createElement("div");
             sq.className = "square " + ((r + c) % 2 === 0 ? "light" : "dark");
             sq.onclick = () => clickSquare(r, c);
-
             const piece = board[r][c];
-
             if (piece) {
                 const img = document.createElement("img");
                 img.src = "/pieces/" + piece + ".svg";
                 img.className = "piece";
                 sq.appendChild(img);
             }
-
             boardDiv.appendChild(sq);
         }
     }
 }
 
-/* ================= CLICK ================= */
+/* ================= CLICK & MOVE ================= */
 
 function clickSquare(r, c) {
-
     const piece = boardState[r][c];
-
     if (!selected) {
         if (!piece) return;
-
-        selected = { r, c };
-        highlightMoves(r, c);
-
+        selected = { r, c }; highlightMoves(r, c);
     } else {
-        // Clicking same piece again - deselect
-        if (selected.r === r && selected.c === c) {
-            selected = null;
-            clearHighlights();
-            return;
-        }
-
-        // Clicking own piece - switch selection
-        const currentPiece = boardState[selected.r][selected.c];
-        if (piece && currentPiece && piece[0] === currentPiece[0]) {
-            selected = { r, c };
-            highlightMoves(r, c);
-            return;
-        }
-
+        if (selected.r === r && selected.c === c) { selected = null; clearHighlights(); return; }
+        const cur = boardState[selected.r][selected.c];
+        if (piece && cur && piece[0] === cur[0]) { selected = { r, c }; highlightMoves(r, c); return; }
         move(selected.r, selected.c, r, c);
-        selected = null;
-        clearHighlights();
+        selected = null; clearHighlights();
     }
 }
 
-/* ================= MOVE ================= */
-
 function move(fr, fc, tr, tc) {
-
     fetch(`/api/games/${gameId}/move`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            fromRow: fr,
-            fromCol: fc,
-            toRow: tr,
-            toCol: tc
-        })
+        headers: { "Content-Type": "application/json", "Authorization": authHeader },
+        body: JSON.stringify({ fromRow: fr, fromCol: fc, toRow: tr, toCol: tc })
     })
-    .then(res => {
-        if (!res.ok) throw new Error("Invalid move");
-        return res.json();
-    })
-    .then(() => {
-        loadBoard();
-        loadHistory();
-        loadTurn();
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Invalid move!");
-    });
+    .then(res => { if (!res.ok) throw new Error("Invalid"); return res.json(); })
+    .then(() => { loadBoard(); loadHistory(); loadTurn(); switchTimer(); })
+    .catch(() => alert("Invalid move!"));
 }
 
-/* ================= HIGHLIGHT LOGIC ================= */
+/* ================= HIGHLIGHT ================= */
 
 function highlightMoves(r, c) {
     clearHighlights();
-
     const squares = document.querySelectorAll(".square");
     const piece = boardState[r][c];
-
     if (!piece) return;
-
-    const color = piece[0]; // 'w' or 'b'
     squares[r * 8 + c].classList.add("selected");
-
-    const moves = getPossibleMoves(piece, r, c, color);
-
-    moves.forEach(([mr, mc]) => {
-        squares[mr * 8 + mc].classList.add("possible");
-    });
+    getPossibleMoves(piece, r, c, piece[0]).forEach(([mr, mc]) => squares[mr * 8 + mc].classList.add("possible"));
 }
 
 function getPossibleMoves(piece, r, c, color) {
-    const type = piece[1]; // p, r, n, b, q, k
     const moves = [];
-
-    switch (type) {
+    switch (piece[1]) {
         case 'p': addPawnMoves(moves, r, c, color); break;
-        case 'r': addSlidingMoves(moves, r, c, color, [[1,0],[-1,0],[0,1],[0,-1]]); break;
-        case 'b': addSlidingMoves(moves, r, c, color, [[1,1],[1,-1],[-1,1],[-1,-1]]); break;
-        case 'q': addSlidingMoves(moves, r, c, color, [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]); break;
-        case 'n': addKnightMoves(moves, r, c, color); break;
-        case 'k': addKingMoves(moves, r, c, color); break;
+        case 'r': addSliding(moves, r, c, color, [[1,0],[-1,0],[0,1],[0,-1]]); break;
+        case 'b': addSliding(moves, r, c, color, [[1,1],[1,-1],[-1,1],[-1,-1]]); break;
+        case 'q': addSliding(moves, r, c, color, [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]); break;
+        case 'n': addKnight(moves, r, c, color); break;
+        case 'k': addKing(moves, r, c, color); break;
     }
-
     return moves;
 }
 
-/* --- Pawn --- */
-function addPawnMoves(moves, r, c, color) {
-    const dir = color === 'w' ? -1 : 1;
-    const startRow = color === 'w' ? 6 : 1;
-
-    // Forward 1
-    if (inBounds(r + dir, c) && boardState[r + dir][c] === null) {
-        moves.push([r + dir, c]);
-
-        // Forward 2 from start
-        if (r === startRow && boardState[r + 2 * dir][c] === null) {
-            moves.push([r + 2 * dir, c]);
-        }
+function addPawnMoves(m, r, c, color) {
+    const dir = color === 'w' ? -1 : 1, start = color === 'w' ? 6 : 1;
+    if (inB(r+dir,c) && !boardState[r+dir][c]) {
+        m.push([r+dir,c]);
+        if (r===start && !boardState[r+2*dir][c]) m.push([r+2*dir,c]);
     }
-
-    // Diagonal captures
-    for (const dc of [-1, 1]) {
-        const nr = r + dir;
-        const nc = c + dc;
-        if (inBounds(nr, nc)) {
-            const target = boardState[nr][nc];
-            if (target !== null && target[0] !== color) {
-                moves.push([nr, nc]);
-            }
-        }
-    }
+    for (const dc of [-1,1])
+        if (inB(r+dir,c+dc) && boardState[r+dir][c+dc] && boardState[r+dir][c+dc][0]!==color)
+            m.push([r+dir,c+dc]);
 }
 
-/* --- Knight --- */
-function addKnightMoves(moves, r, c, color) {
-    const jumps = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
-    for (const [dr, dc] of jumps) {
-        const nr = r + dr;
-        const nc = c + dc;
-        if (inBounds(nr, nc)) {
-            const target = boardState[nr][nc];
-            if (target === null || target[0] !== color) {
-                moves.push([nr, nc]);
-            }
+function addKnight(m, r, c, color) {
+    for (const [dr,dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]])
+        if (inB(r+dr,c+dc) && (!boardState[r+dr][c+dc] || boardState[r+dr][c+dc][0]!==color))
+            m.push([r+dr,c+dc]);
+}
+
+function addSliding(m, r, c, color, dirs) {
+    for (const [dr,dc] of dirs) {
+        let nr=r+dr, nc=c+dc;
+        while (inB(nr,nc)) {
+            if (!boardState[nr][nc]) { m.push([nr,nc]); }
+            else { if (boardState[nr][nc][0]!==color) m.push([nr,nc]); break; }
+            nr+=dr; nc+=dc;
         }
     }
 }
 
-/* --- Sliding pieces (Rook, Bishop, Queen) --- */
-function addSlidingMoves(moves, r, c, color, directions) {
-    for (const [dr, dc] of directions) {
-        let nr = r + dr;
-        let nc = c + dc;
-        while (inBounds(nr, nc)) {
-            const target = boardState[nr][nc];
-            if (target === null) {
-                moves.push([nr, nc]);
-            } else {
-                if (target[0] !== color) moves.push([nr, nc]); // capture
-                break; // blocked
-            }
-            nr += dr;
-            nc += dc;
-        }
-    }
+function addKing(m, r, c, color) {
+    for (const [dr,dc] of [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]])
+        if (inB(r+dr,c+dc) && (!boardState[r+dr][c+dc] || boardState[r+dr][c+dc][0]!==color))
+            m.push([r+dr,c+dc]);
 }
 
-/* --- King --- */
-function addKingMoves(moves, r, c, color) {
-    const dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
-    for (const [dr, dc] of dirs) {
-        const nr = r + dr;
-        const nc = c + dc;
-        if (inBounds(nr, nc)) {
-            const target = boardState[nr][nc];
-            if (target === null || target[0] !== color) {
-                moves.push([nr, nc]);
-            }
-        }
-    }
-}
-
-/* --- Helper --- */
-function inBounds(r, c) {
-    return r >= 0 && r < 8 && c >= 0 && c < 8;
-}
+function inB(r,c) { return r>=0 && r<8 && c>=0 && c<8; }
 
 function clearHighlights() {
-    document.querySelectorAll(".square").forEach(sq => {
-        sq.classList.remove("selected", "possible");
-    });
+    document.querySelectorAll(".square").forEach(s => s.classList.remove("selected","possible"));
 }
 
-/* ================= HISTORY ================= */
+/* ================= HISTORY & TURN ================= */
 
 function loadHistory() {
-
-    fetch(`/api/games/${gameId}/history/white`)
-    .then(res => res.json())
-    .then(list => {
-        const div = document.getElementById("whiteHistory");
-        div.innerHTML = "";
-        list.forEach(m => {
-            const li = document.createElement("li");
-            li.innerText = m;
-            div.appendChild(li);
-        });
-    });
-
-    fetch(`/api/games/${gameId}/history/black`)
-    .then(res => res.json())
-    .then(list => {
-        const div = document.getElementById("blackHistory");
-        div.innerHTML = "";
-        list.forEach(m => {
-            const li = document.createElement("li");
-            li.innerText = m;
-            div.appendChild(li);
+    ["white","black"].forEach(color => {
+        fetch(`/api/games/${gameId}/history/${color}`, { headers: { "Authorization": authHeader } })
+        .then(r => r.json()).then(list => {
+            const ul = document.getElementById(color + "History");
+            ul.innerHTML = "";
+            list.forEach(m => { const li = document.createElement("li"); li.innerText = m; ul.appendChild(li); });
         });
     });
 }
-
-/* ================= TURN ================= */
 
 function loadTurn() {
-    fetch(`/api/games/${gameId}/turn`)
-    .then(res => res.text())
-    .then(t => {
-        document.getElementById("turn").innerText = "Turn: " + t;
+    fetch(`/api/games/${gameId}/turn`, { headers: { "Authorization": authHeader } })
+    .then(r => r.text()).then(t => { document.getElementById("turn").innerText = "Turn: " + t; });
+}
+
+/* ================= TIMER ================= */
+
+function startTimer() {
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        if (currentTurn === "white") {
+            whiteTime--;
+            document.getElementById("whiteTimer").innerText = fmt(whiteTime);
+            if (whiteTime <= 0) { clearInterval(timerInterval); alert("White time up! Black wins!"); }
+        } else {
+            blackTime--;
+            document.getElementById("blackTimer").innerText = fmt(blackTime);
+            if (blackTime <= 0) { clearInterval(timerInterval); alert("Black time up! White wins!"); }
+        }
+    }, 1000);
+}
+
+function switchTimer() { currentTurn = currentTurn === "white" ? "black" : "white"; }
+function fmt(s) { return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; }
+
+/* ================= RESET & UNDO ================= */
+
+function resetGame() {
+    fetch(`/api/games/${gameId}/reset`, { method: "POST", headers: { "Authorization": authHeader } })
+    .then(() => {
+        whiteTime=600; blackTime=600; currentTurn="white";
+        document.getElementById("whiteTimer").innerText = "10:00";
+        document.getElementById("blackTimer").innerText = "10:00";
+        initGame(); startTimer();
     });
 }
 
-/* ================= RESET ================= */
-
-function resetGame() {
-    fetch(`/api/games/${gameId}/reset`, { method: "POST" })
-    .then(() => initGame());
-}
-
-/* ================= UNDO ================= */
-
 function undoMove() {
-    fetch(`/api/games/${gameId}/undo`, { method: "POST" })
+    fetch(`/api/games/${gameId}/undo`, { method: "POST", headers: { "Authorization": authHeader } })
     .then(() => initGame());
 }

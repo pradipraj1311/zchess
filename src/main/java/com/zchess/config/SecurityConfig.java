@@ -1,6 +1,7 @@
 package com.zchess.config;
 
 import org.springframework.context.annotation.Bean;
+
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
@@ -26,6 +27,7 @@ public class SecurityConfig {
                     "/chess.html",
                     "/chess.js",
                     "/chess.css",
+                    "/admin.html",
                     "/pieces/**"
                 ).permitAll()
 
