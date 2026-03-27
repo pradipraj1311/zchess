@@ -8,24 +8,47 @@
 </head>
 <body>
 
-<!-- ROLE SCREEN -->
+<!-- ── ROLE SCREEN ── -->
 <div id="roleScreen" class="center">
     <h1>♔ zChess</h1>
-    <button class="btn btn-gold"  onclick="selectRole('player')">🎮 Player</button>
-    <button class="btn btn-green" onclick="selectRole('admin')">🛡 Admin</button>
+    <button class="btn btn-gold" onclick="selectRole('player')">🎮 Play as Player</button>
+    <button class="btn btn-blue" onclick="selectRole('admin')">🛡 Admin Panel</button>
 </div>
 
-<!-- LOGIN SCREEN -->
-<div id="loginScreen" class="center hidden">
-    <h2 id="loginTitle">Player Login</h2>
-    <input id="username" placeholder="Username" autocomplete="off">
-    <input id="password" type="password" placeholder="Password">
+<!-- ── PLAYER LOGIN ── -->
+<div id="playerLoginScreen" class="center hidden">
+    <h2>Player Login</h2>
+    <input id="playerUsername" placeholder="Username" autocomplete="off">
+    <input id="playerPassword" type="password" placeholder="Password">
     <button class="btn btn-gold"  onclick="login()">Login</button>
-    <button id="registerBtn" class="btn btn-green" onclick="register()">Register</button>
-    <button class="btn btn-grey"  onclick="goBack()">← Back</button>
+    <div class="divider">── New here? ──</div>
+    <button class="btn btn-green" onclick="showScreen('registerScreen')">Register Account</button>
+    <button class="btn btn-grey"  onclick="showScreen('roleScreen')">← Back</button>
 </div>
 
-<!-- GAME SCREEN -->
+<!-- ── ADMIN LOGIN ── -->
+<div id="adminLoginScreen" class="center hidden">
+    <h2>Admin Login</h2>
+    <input id="adminUsername" placeholder="Admin Username" autocomplete="off">
+    <input id="adminPassword" type="password" placeholder="Password">
+    <button class="btn btn-gold" onclick="loginAdmin()">Login</button>
+    <button class="btn btn-grey" onclick="showScreen('roleScreen')">← Back</button>
+    <p style="color:#444;font-size:0.78rem;text-align:center">
+        Admin accounts managed by system administrator
+    </p>
+</div>
+
+<!-- ── REGISTER ── -->
+<div id="registerScreen" class="center hidden">
+    <h2>Create Account</h2>
+    <input id="regUsername" placeholder="Username" autocomplete="off">
+    <input id="regPassword" type="password" placeholder="Password">
+    <input id="regConfirm"  type="password" placeholder="Confirm Password">
+    <button class="btn btn-green" onclick="register()">Register</button>
+    <button class="btn btn-grey"  onclick="showScreen('playerLoginScreen')">← Back</button>
+</div>
+
+<!-- ── GAME SCREEN ── -->
 <div id="gameScreen" class="hidden">
 
     <div class="top-bar">
@@ -36,10 +59,16 @@
         </div>
     </div>
 
-    <div class="container">
+    <div class="game-body">
 
-        <div id="board"></div>
+        <!-- Board + player labels -->
+        <div class="board-wrap">
+            <div class="player-label" id="blackLabel">♚ Black</div>
+            <div id="board"></div>
+            <div class="player-label active" id="whiteLabel">♔ White (You)</div>
+        </div>
 
+        <!-- Side panel -->
         <div class="side">
             <div>
                 <h3>White Moves</h3>
@@ -50,16 +79,34 @@
                 <ul class="move-list" id="blackHistory"></ul>
             </div>
             <div class="btn-row">
-                <button class="btn-sm btn-reset" onclick="resetGame()">Reset</button>
-                <button class="btn-sm btn-undo"  onclick="undoMove()">Undo</button>
+                <button class="btn-sm btn-reset" onclick="resetGame()">↺ Reset</button>
+                <button class="btn-sm btn-undo"  onclick="undoMove()">↩ Undo</button>
             </div>
             <div class="timer-card">
                 <h3>Timer</h3>
-                <div class="timer-row">White <span id="whiteTimer">10:00</span></div>
-                <div class="timer-row">Black <span id="blackTimer">10:00</span></div>
+                <div class="timer-row active" id="whiteTimerRow">
+                    ♔ White <span id="whiteTimer">10:00</span>
+                </div>
+                <div class="timer-row" id="blackTimerRow">
+                    ♚ Black <span id="blackTimer">10:00</span>
+                </div>
             </div>
         </div>
 
+    </div>
+</div>
+
+<!-- ── GAME OVER MODAL ── -->
+<div id="gameOverModal" class="modal-overlay hidden">
+    <div class="modal">
+        <span class="result-icon" id="resultIcon">♔</span>
+        <h2 id="resultTitle">Game Over</h2>
+        <p class="result-msg"   id="resultMsg"></p>
+        <p class="rating-change" id="ratingChange"></p>
+        <div class="modal-btns">
+            <button class="modal-btn modal-btn-gold" onclick="resetGame()">Play Again</button>
+            <button class="modal-btn modal-btn-grey" onclick="showScreen('roleScreen')">Exit</button>
+        </div>
     </div>
 </div>
 
