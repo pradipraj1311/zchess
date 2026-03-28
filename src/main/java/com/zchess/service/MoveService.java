@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.zchess.engine.Board;
 import com.zchess.engine.CheckValidator;
+import com.zchess.engine.CheckmateDetector;
 import com.zchess.engine.ChessNotation;
 import com.zchess.engine.GameState;
 import com.zchess.engine.MoveValidator;
@@ -19,83 +20,73 @@ import com.zchess.repository.MoveRepository;
 public class MoveService {
 
     private static List<String> whiteHistory = new ArrayList<>();
-    private static List<String> blackHistory = new ArrayList<>();
-    private static List<Move> moves = new ArrayList<>();
-    private static int moveNumber = 0;
+    private static List<String> blackHistory  = new ArrayList<>();
+    private static List<Move>   moves         = new ArrayList<>();
+    private static int          moveNumber    = 0;
+    private static String       gameResult    = "ONGOING";
+    private static Long         currentGameId = null;
 
     private final MoveRepository moveRepository;
     private final GameRepository gameRepository;
+    private final GameService    gameService;
 
-    public MoveService(MoveRepository moveRepository, GameRepository gameRepository) {
+    public MoveService(MoveRepository moveRepository,
+                       GameRepository gameRepository,
+                       GameService gameService) {
         this.moveRepository = moveRepository;
         this.gameRepository = gameRepository;
+        this.gameService    = gameService;
     }
 
-    public String[][] getBoard() {
-        return Board.getBoard();
-    }
-
-    public List<String> getWhiteHistory() {
-        return whiteHistory;
-    }
-
-    public List<String> getBlackHistory() {
-        return blackHistory;
-    }
-
-    public String getTurn() {
-        return GameState.currentTurn;
-    }
+    public String[][]   getBoard()        { return Board.getBoard(); }
+    public List<String> getWhiteHistory() { return whiteHistory; }
+    public List<String> getBlackHistory() { return blackHistory; }
+    public String       getTurn()         { return GameState.currentTurn; }
+    public String       getGameResult()   { return gameResult; }
 
     // ================= MOVE =================
-    public boolean move(Long gameId, Move move) {
+    public String move(Long gameId, Move move) {
+
+        // NEW USER LOGIN - different gameId = reset board state
+        if (currentGameId != null && !currentGameId.equals(gameId)) {
+            resetState();
+        }
+        currentGameId = gameId;
+
+        if (!gameResult.equals("ONGOING")) return gameResult;
 
         String[][] board = Board.getBoard();
-
-        int fr = move.getFromRow();
-        int fc = move.getFromCol();
-        int tr = move.getToRow();
-        int tc = move.getToCol();
+        int fr = move.getFromRow(), fc = move.getFromCol();
+        int tr = move.getToRow(),   tc = move.getToCol();
 
         String piece = board[fr][fc];
-
-        if (piece == null) return false;
+        if (piece == null) return "INVALID";
 
         boolean isWhite = piece.startsWith("w");
 
-        // turn validation
-        if (isWhite && !GameState.currentTurn.equals("white")) return false;
-        if (!isWhite && !GameState.currentTurn.equals("black")) return false;
+        if (isWhite  && !GameState.currentTurn.equals("white")) return "INVALID";
+        if (!isWhite && !GameState.currentTurn.equals("black")) return "INVALID";
 
         String target = board[tr][tc];
+        if (target != null && target.startsWith(piece.substring(0, 1))) return "INVALID";
 
-        // prevent own capture
-        if (target != null && target.startsWith(piece.substring(0, 1))) return false;
-
-        // validate move
         try {
-            if (!MoveValidator.isValidMove(piece, fr, fc, tr, tc, board)) return false;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+            if (!MoveValidator.isValidMove(piece, fr, fc, tr, tc, board)) return "INVALID";
+        } catch (Exception e) { e.printStackTrace(); return "INVALID"; }
 
-        // apply move temporarily
+        // apply move
         board[tr][tc] = piece;
         board[fr][fc] = null;
 
-        // king safety check - rollback if needed
+        // king safety rollback
         try {
             if (CheckValidator.isKingInCheck(board, isWhite)) {
-                board[fr][fc] = piece;
-                board[tr][tc] = target;
-                return false;
+                board[fr][fc] = piece; board[tr][tc] = target;
+                return "INVALID";
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            board[fr][fc] = piece;
-            board[tr][tc] = target;
-            return false;
+            board[fr][fc] = piece; board[tr][tc] = target;
+            return "INVALID";
         }
 
         // pawn promotion
@@ -103,96 +94,106 @@ public class MoveService {
         if (piece.equals("bp") && tr == 7) board[tr][tc] = "bq";
 
         // notation
-        boolean isCapture = (target != null);
-        String notation = ChessNotation.convert(piece, fr, fc, tr, tc, isCapture);
+        boolean isCapture   = (target != null);
+        String  notation    = ChessNotation.convert(piece, fr, fc, tr, tc, isCapture);
 
-        // check detection for opponent
+        // checkmate / stalemate detection
+        boolean opponentIsWhite = !isWhite;
+        boolean isCheckmate = false, isStalemate = false, isCheck = false;
         try {
-            if (CheckValidator.isKingInCheck(board, !isWhite)) {
-                notation += "+";
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            isCheckmate = CheckmateDetector.isCheckmate(board, opponentIsWhite);
+            isStalemate = CheckmateDetector.isStalemate(board, opponentIsWhite);
+            isCheck     = CheckValidator.isKingInCheck(board, opponentIsWhite);
+        } catch (Exception e) { e.printStackTrace(); }
 
-        // move number
+        if (isCheckmate)  notation += "#";
+        else if (isCheck) notation += "+";
+
         moveNumber++;
-
-        // set move fields
         move.setPiece(board[tr][tc]);
         move.setNotation(notation);
         move.setMoveNumber(moveNumber);
 
-        // link to game and SAVE TO DATABASE
+        // save to DB
         try {
             Game game = gameRepository.findById(gameId)
                     .orElseThrow(() -> new RuntimeException("Game not found"));
             move.setGame(game);
-            moveRepository.save(move); // DB ma save
-        } catch (Exception e) {
-            System.err.println("Error saving move to DB: " + e.getMessage());
-            e.printStackTrace();
-        }
+            moveRepository.save(move);
+        } catch (Exception e) { e.printStackTrace(); }
 
-        // in-memory list for undo
         moves.add(move);
 
-        // history
-        if (isWhite) {
-            whiteHistory.add(notation);
-        } else {
-            blackHistory.add(notation);
-        }
+        if (isWhite) whiteHistory.add(notation);
+        else         blackHistory.add(notation);
 
-        System.out.println("MOVE SAVED: " + fr + "," + fc + " -> " + tr + "," + tc + " | " + notation);
+        System.out.println("MOVE: "+fr+","+fc+" -> "+tr+","+tc+" | "+notation);
 
-        // switch turn
         GameState.switchTurn();
 
-        return true;
+        // determine result
+        if (isCheckmate) {
+            gameResult = isWhite ? "WHITE_WIN" : "BLACK_WIN";
+            gameService.updateGameStatus(gameId, gameResult); // update DB
+            System.out.println("CHECKMATE: " + gameResult);
+            return gameResult;
+        }
+        if (isStalemate) {
+            gameResult = "STALEMATE";
+            gameService.updateGameStatus(gameId, gameResult); // update DB
+            System.out.println("STALEMATE");
+            return gameResult;
+        }
+
+        return "OK";
+    }
+
+    // ================= TIMEOUT =================
+    public String declareTimeout(Long gameId, String loserColor) {
+        gameResult = loserColor.equals("white") ? "BLACK_WIN" : "WHITE_WIN";
+        gameService.updateGameStatus(gameId, gameResult); // update DB
+        return gameResult;
     }
 
     // ================= UNDO =================
     public void undo() {
-
         if (moves.isEmpty()) return;
 
-        Move lastMove = moves.remove(moves.size() - 1);
+        Move last = moves.remove(moves.size() - 1);
         moveNumber--;
+        gameResult = "ONGOING";
 
-        // DB thi delete
         try {
-            if (lastMove.getId() != null) {
-                moveRepository.deleteById(lastMove.getId());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            if (last.getId() != null) moveRepository.deleteById(last.getId());
+        } catch (Exception e) { e.printStackTrace(); }
 
-        // history remove
         if (GameState.currentTurn.equals("white")) {
-            if (!blackHistory.isEmpty()) blackHistory.remove(blackHistory.size() - 1);
+            if (!blackHistory.isEmpty())  blackHistory.remove(blackHistory.size() - 1);
         } else {
             if (!whiteHistory.isEmpty()) whiteHistory.remove(whiteHistory.size() - 1);
         }
 
-        // rebuild board from remaining moves
         Board.resetBoard();
         String[][] board = Board.getBoard();
         for (Move m : moves) {
-            board[m.getToRow()][m.getToCol()] = m.getPiece();
+            board[m.getToRow()][m.getToCol()]     = m.getPiece();
             board[m.getFromRow()][m.getFromCol()] = null;
         }
-
         GameState.switchTurn();
     }
 
     // ================= RESET =================
     public void reset() {
+        resetState();
+    }
+
+    // internal reset - called on new user login too
+    private void resetState() {
         moves.clear();
         whiteHistory.clear();
         blackHistory.clear();
         moveNumber = 0;
+        gameResult = "ONGOING";
         Board.resetBoard();
         GameState.reset();
     }

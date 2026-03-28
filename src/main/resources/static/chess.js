@@ -1,9 +1,10 @@
-/* ================= GLOBAL STATE ================= */
+'use strict';
+/* ================= STATE ================= */
 let gameId = null, selected = null, boardState = [];
 let currentUser = null, authHeader = null;
 let whiteTime = 600, blackTime = 600;
-let timerInterval = null, activeTurn = "white";
-let gameOver = false;
+let timerInterval = null, activeTurn = 'white', gameOver = false;
+let SQ = 64; // square size in px - calculated on init
 
 /* ================= SCREEN ================= */
 function showScreen(id) {
@@ -12,25 +13,74 @@ function showScreen(id) {
     document.getElementById(id).classList.remove('hidden');
     document.getElementById('gameOverModal').classList.add('hidden');
 }
+function selectRole(r) { showScreen(r === 'admin' ? 'adminLoginScreen' : 'playerLoginScreen'); }
 
-function selectRole(role) {
-    showScreen(role === 'admin' ? 'adminLoginScreen' : 'playerLoginScreen');
+/* ================= BOARD SIZE ================= */
+function calcBoardSize() {
+    // available space: viewport minus top bar (~58px) minus padding (32px) minus labels (~30px)
+    const topBar  = document.querySelector('.top-bar')?.offsetHeight || 58;
+    const availH  = window.innerHeight - topBar - 60;  // 60 = padding + labels
+    const availW  = window.innerWidth  - 300 - 80;     // 300 = side panel, 80 = gaps+rank col
+    const maxSide = Math.min(availH, availW, 640);
+    SQ = Math.floor(maxSide / 8);
+    if (SQ < 40) SQ = 40;
+    if (SQ > 88) SQ = 88;
+
+    // set CSS variable
+    document.documentElement.style.setProperty('--sq', SQ + 'px');
+    document.getElementById('board').style.width  = (SQ * 8) + 'px';
+    document.getElementById('board').style.height = (SQ * 8) + 'px';
+}
+
+window.addEventListener('resize', () => { calcBoardSize(); buildCoordinates(); });
+
+/* ================= COORDINATES ================= */
+function buildCoordinates() {
+    // Rank labels 8→1 on left
+    const rankCol = document.getElementById('rankCol');
+    rankCol.innerHTML = '';
+    ['8','7','6','5','4','3','2','1'].forEach(r => {
+        const el = document.createElement('div');
+        el.className = 'rank-lbl';
+        el.style.height = SQ + 'px';
+        el.style.width  = '20px';
+        el.innerText = r;
+        rankCol.appendChild(el);
+    });
+
+    // File labels a→h on bottom
+    const fileRow = document.getElementById('fileRow');
+    fileRow.innerHTML = '';
+    ['a','b','c','d','e','f','g','h'].forEach(f => {
+        const el = document.createElement('div');
+        el.className = 'file-lbl';
+        el.style.width = SQ + 'px';
+        el.innerText = f;
+        fileRow.appendChild(el);
+    });
+}
+
+/* ================= SIGN OUT ================= */
+function signOut() {
+    clearInterval(timerInterval);
+    sessionStorage.clear();
+    authHeader = null; currentUser = null;
+    gameId = null; gameOver = false;
+    activeTurn = 'white'; whiteTime = 600; blackTime = 600;
+    showScreen('roleScreen');
 }
 
 /* ================= REGISTER ================= */
 function register() {
-    const username = document.getElementById('regUsername').value.trim();
-    const password = document.getElementById('regPassword').value.trim();
-    const confirm  = document.getElementById('regConfirm').value.trim();
-
-    if (!username || !password) { alert('Username and password required!'); return; }
-    if (password !== confirm)   { alert('Passwords do not match!'); return; }
-    if (password.length < 4)    { alert('Minimum 4 characters!'); return; }
-
+    const u = document.getElementById('regUsername').value.trim();
+    const p = document.getElementById('regPassword').value.trim();
+    const c = document.getElementById('regConfirm').value.trim();
+    if (!u || !p) { alert('Username and password required!'); return; }
+    if (p !== c)  { alert('Passwords do not match!'); return; }
+    if (p.length < 4) { alert('Minimum 4 characters!'); return; }
     fetch('/api/users/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, role: 'USER' })
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: u, password: p, role: 'USER' })
     })
     .then(r => { if (!r.ok) throw new Error(); return r.json(); })
     .then(() => {
@@ -43,41 +93,47 @@ function register() {
 
 /* ================= LOGIN ================= */
 function login() {
-    const username = document.getElementById('playerUsername').value.trim();
-    const password = document.getElementById('playerPassword').value.trim();
-    if (!username || !password) { alert('Username and password required!'); return; }
-
-    authHeader  = 'Basic ' + btoa(username + ':' + password);
-    currentUser = username;
-
+    const u = document.getElementById('playerUsername').value.trim();
+    const p = document.getElementById('playerPassword').value.trim();
+    if (!u || !p) { alert('Username and password required!'); return; }
+    authHeader = 'Basic ' + btoa(u + ':' + p);
+    currentUser = u;
     fetch('/api/users', { headers: { 'Authorization': authHeader } })
     .then(r => { if (!r.ok) throw new Error('Invalid'); return r.json(); })
     .then(() => {
         sessionStorage.setItem('authHeader', authHeader);
-        sessionStorage.setItem('currentUser', username);
-        document.getElementById('usernameLabel').innerText = '👤 ' + username;
-        loadRating();
-        createGame();
+        sessionStorage.setItem('currentUser', u);
+        gameOver = false; gameId = null;
+        activeTurn = 'white'; whiteTime = 600; blackTime = 600;
+        clearInterval(timerInterval);
+        document.getElementById('usernameLabel').innerText = '👤 ' + u;
+        document.getElementById('whiteTimer').innerText = '10:00';
+        document.getElementById('blackTimer').innerText = '10:00';
         showScreen('gameScreen');
+        // calculate board size AFTER screen is visible
+        setTimeout(() => {
+            calcBoardSize();
+            buildCoordinates();
+            loadRating();
+            createGame();
+        }, 30);
     })
     .catch(() => alert('Login failed! Check credentials.'));
 }
 
 function loginAdmin() {
-    const username = document.getElementById('adminUsername').value.trim();
-    const password = document.getElementById('adminPassword').value.trim();
-    if (!username || !password) { alert('Username and password required!'); return; }
-
-    const ah = 'Basic ' + btoa(username + ':' + password);
-
+    const u = document.getElementById('adminUsername').value.trim();
+    const p = document.getElementById('adminPassword').value.trim();
+    if (!u || !p) { alert('Username and password required!'); return; }
+    const ah = 'Basic ' + btoa(u + ':' + p);
     fetch('/api/users', { headers: { 'Authorization': ah } })
-    .then(r => { if (!r.ok) throw new Error('Invalid'); return r.json(); })
+    .then(r => { if (!r.ok) throw new Error(); return r.json(); })
     .then(() => {
         sessionStorage.setItem('authHeader', ah);
-        sessionStorage.setItem('currentUser', username);
+        sessionStorage.setItem('currentUser', u);
         window.location.href = '/admin.html';
     })
-    .catch(() => alert('Login failed! Check credentials.'));
+    .catch(() => alert('Login failed!'));
 }
 
 /* ================= RATING ================= */
@@ -88,25 +144,20 @@ function loadRating() {
     .catch(() => { document.getElementById('ratingDisplay').innerText = '1000'; });
 }
 
-/* ================= GAME INIT ================= */
+/* ================= GAME ================= */
 function createGame() {
-    gameOver = false;
-    activeTurn = 'white';
     fetch('/api/games', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': authHeader }
     })
     .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-    .then(game => { gameId = game.id; initGame(); startTimer(); })
+    .then(game => { gameId = game.id; gameOver = false; initGame(); startTimer(); })
     .catch(err => alert('Failed to create game: ' + err.message));
 }
 
-function initGame() {
-    if (!gameId) return;
-    loadBoard(); loadHistory(); loadTurn();
-}
+function initGame() { if (!gameId) return; loadBoard(); loadHistory(); loadTurn(); }
 
-/* ================= BOARD ================= */
+/* ================= DRAW BOARD ================= */
 function loadBoard() {
     fetch(`/api/games/${gameId}/board`, { headers: { 'Authorization': authHeader } })
     .then(r => r.json())
@@ -114,14 +165,21 @@ function loadBoard() {
 }
 
 function drawBoard(board) {
-    const div = document.getElementById('board');
-    div.innerHTML = '';
+    const container = document.getElementById('board');
+    // IMPORTANT: set explicit size before adding children - prevents reflow
+    container.style.width  = (SQ * 8) + 'px';
+    container.style.height = (SQ * 8) + 'px';
+    container.innerHTML = '';
+
+    const frag = document.createDocumentFragment();
     for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
             const sq = document.createElement('div');
             sq.className = 'square ' + ((r + c) % 2 === 0 ? 'light' : 'dark');
-            sq.dataset.r = r; sq.dataset.c = c;
+            // FIXED dimensions - no CSS variable needed on square itself
+            sq.style.cssText = `width:${SQ}px;height:${SQ}px;`;
             sq.onclick = () => clickSquare(r, c);
+
             const piece = board[r][c];
             if (piece) {
                 const img = document.createElement('img');
@@ -129,120 +187,49 @@ function drawBoard(board) {
                 img.className = 'piece';
                 sq.appendChild(img);
             }
-            div.appendChild(sq);
+            frag.appendChild(sq);
         }
     }
+    container.appendChild(frag);
 }
 
-/* ================= CLICK & MOVE ================= */
+/* ================= CLICK ================= */
 function clickSquare(r, c) {
     if (gameOver) return;
     const piece = boardState[r][c];
     if (!selected) {
         if (!piece) return;
-        selected = { r, c }; highlightMoves(r, c);
+        selected = { r, c }; applyHighlights(r, c);
     } else {
-        if (selected.r === r && selected.c === c) { selected = null; clearHighlights(); return; }
+        if (selected.r === r && selected.c === c) { selected = null; clearHL(); return; }
         const cur = boardState[selected.r][selected.c];
-        if (piece && cur && piece[0] === cur[0]) { selected = { r, c }; highlightMoves(r, c); return; }
+        if (piece && cur && piece[0] === cur[0]) { selected = { r, c }; applyHighlights(r, c); return; }
         doMove(selected.r, selected.c, r, c);
-        selected = null; clearHighlights();
+        selected = null; clearHL();
     }
-}
-
-function doMove(fr, fc, tr, tc) {
-    fetch(`/api/games/${gameId}/move`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
-        body: JSON.stringify({ fromRow: fr, fromCol: fc, toRow: tr, toCol: tc })
-    })
-    .then(r => {
-        if (!r.ok) {
-            // 400 = invalid move - just show alert, no modal
-            return r.text().then(() => { throw new Error('INVALID'); });
-        }
-        return r.text(); // get raw text - avoid JSON parse issues
-    })
-    .then(raw => {
-        // clean the result string - remove quotes if any
-        const result = raw.replace(/['"]/g, '').trim();
-        loadBoard();
-        loadHistory();
-        loadTurn();
-        switchTimer();
-
-        // only show modal on actual game-ending results
-        if (result === 'WHITE_WIN' || result === 'BLACK_WIN' || result === 'STALEMATE') {
-            gameOver = true;
-            clearInterval(timerInterval);
-            handleGameResult(result);
-        }
-        // if "OK" or anything else - continue normally
-    })
-    .catch(err => {
-        if (err.message === 'INVALID') alert('Invalid move!');
-    });
-}
-
-/* ================= GAME RESULT MODAL ================= */
-function handleGameResult(result) {
-    let icon, title, msg;
-
-    if (result === 'WHITE_WIN') {
-        icon = '♔'; title = 'White Wins!'; msg = 'Checkmate! ♔ White wins the game.';
-        updateRating('white');
-    } else if (result === 'BLACK_WIN') {
-        icon = '♚'; title = 'Black Wins!'; msg = 'Checkmate! ♚ Black wins the game.';
-        updateRating('black');
-    } else if (result === 'STALEMATE') {
-        icon = '🤝'; title = 'Stalemate!'; msg = "No legal moves left. It's a draw!";
-        updateRating('draw');
-    } else {
-        return; // unknown result - do nothing
-    }
-
-    document.getElementById('resultIcon').innerText  = icon;
-    document.getElementById('resultTitle').innerText = title;
-    document.getElementById('resultMsg').innerText   = msg;
-    document.getElementById('ratingChange').innerText = '';
-    document.getElementById('gameOverModal').classList.remove('hidden');
-}
-
-/* ================= RATING UPDATE ================= */
-function updateRating(winner) {
-    fetch(`/api/ratings/update-solo?username=${currentUser}&result=${winner}`, {
-        method: 'POST',
-        headers: { 'Authorization': authHeader }
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (!data || data.newRating === undefined) return;
-        const change = data.ratingChange || 0;
-        const el = document.getElementById('ratingChange');
-        el.innerText  = change >= 0 ? `Rating: +${change} ⭐` : `Rating: ${change} ⭐`;
-        el.className  = 'rating-change' + (change < 0 ? ' negative' : '');
-        document.getElementById('ratingDisplay').innerText = data.newRating;
-    })
-    .catch(() => {});
 }
 
 /* ================= HIGHLIGHT ================= */
-function highlightMoves(r, c) {
-    clearHighlights();
+function applyHighlights(r, c) {
+    clearHL();
     const squares = document.querySelectorAll('.square');
     const piece = boardState[r][c];
     if (!piece) return;
     squares[r * 8 + c].classList.add('selected');
     getPossibleMoves(piece, r, c, piece[0]).forEach(([mr, mc]) => {
         const sq = squares[mr * 8 + mc];
-        sq.classList.add('possible');
-        if (boardState[mr][mc]) sq.classList.add('has-piece');
+        if (boardState[mr][mc]) sq.classList.add('capture-ring');
+        else                     sq.classList.add('dot');
     });
+}
+
+function clearHL() {
+    document.querySelectorAll('.square').forEach(s => s.classList.remove('selected','dot','capture-ring'));
 }
 
 function getPossibleMoves(piece, r, c, color) {
     const m = [];
-    switch (piece[1]) {
+    switch(piece[1]) {
         case 'p': addPawn(m,r,c,color); break;
         case 'r': addSlide(m,r,c,color,[[1,0],[-1,0],[0,1],[0,-1]]); break;
         case 'b': addSlide(m,r,c,color,[[1,1],[1,-1],[-1,1],[-1,-1]]); break;
@@ -252,15 +239,64 @@ function getPossibleMoves(piece, r, c, color) {
     }
     return m;
 }
-
 function addPawn(m,r,c,col){const d=col==='w'?-1:1,s=col==='w'?6:1;if(inB(r+d,c)&&!boardState[r+d][c]){m.push([r+d,c]);if(r===s&&!boardState[r+2*d][c])m.push([r+2*d,c]);}for(const dc of[-1,1])if(inB(r+d,c+dc)&&boardState[r+d][c+dc]&&boardState[r+d][c+dc][0]!==col)m.push([r+d,c+dc]);}
 function addKnight(m,r,c,col){for(const[dr,dc]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]])if(inB(r+dr,c+dc)&&(!boardState[r+dr][c+dc]||boardState[r+dr][c+dc][0]!==col))m.push([r+dr,c+dc]);}
 function addSlide(m,r,c,col,dirs){for(const[dr,dc]of dirs){let nr=r+dr,nc=c+dc;while(inB(nr,nc)){if(!boardState[nr][nc]){m.push([nr,nc]);}else{if(boardState[nr][nc][0]!==col)m.push([nr,nc]);break;}nr+=dr;nc+=dc;}}}
 function addKing(m,r,c,col){for(const[dr,dc]of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]])if(inB(r+dr,c+dc)&&(!boardState[r+dr][c+dc]||boardState[r+dr][c+dc][0]!==col))m.push([r+dr,c+dc]);}
 function inB(r,c){return r>=0&&r<8&&c>=0&&c<8;}
 
-function clearHighlights(){
-    document.querySelectorAll('.square').forEach(s => s.classList.remove('selected','possible','has-piece'));
+/* ================= MOVE ================= */
+function doMove(fr, fc, tr, tc) {
+    fetch(`/api/games/${gameId}/move`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+        body: JSON.stringify({ fromRow: fr, fromCol: fc, toRow: tr, toCol: tc })
+    })
+    .then(r => {
+        if (!r.ok) return r.text().then(() => { throw new Error('INVALID'); });
+        return r.text();
+    })
+    .then(raw => {
+        const result = raw.replace(/['"]/g,'').trim();
+        // update board state directly from response - avoid full reload flicker
+        loadBoard(); loadHistory(); loadTurn(); switchTimer();
+        if (result === 'WHITE_WIN' || result === 'BLACK_WIN' || result === 'STALEMATE') {
+            gameOver = true; clearInterval(timerInterval);
+            showModal(result, '');
+        }
+    })
+    .catch(err => { if (err.message === 'INVALID') alert('Invalid move!'); });
+}
+
+/* ================= MODAL ================= */
+function showModal(result, overrideMsg) {
+    let icon, title, msg;
+    if      (result==='WHITE_WIN') { icon='♔'; title='White Wins!'; msg=overrideMsg||'♔ White wins by Checkmate!'; updateRating('white'); }
+    else if (result==='BLACK_WIN') { icon='♚'; title='Black Wins!'; msg=overrideMsg||'♚ Black wins by Checkmate!'; updateRating('black'); }
+    else if (result==='STALEMATE') { icon='🤝'; title='Stalemate!'; msg=overrideMsg||"No legal moves — it's a draw!"; updateRating('draw'); }
+    else return;
+    document.getElementById('resultIcon').innerText  = icon;
+    document.getElementById('resultTitle').innerText = title;
+    document.getElementById('resultMsg').innerText   = msg;
+    document.getElementById('ratingChange').innerText = 'Updating rating...';
+    document.getElementById('ratingChange').className = 'rating-change';
+    document.getElementById('gameOverModal').classList.remove('hidden');
+}
+
+function updateRating(winner) {
+    fetch(`/api/ratings/update-solo?username=${currentUser}&result=${winner}`, {
+        method: 'POST', headers: { 'Authorization': authHeader }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (!data || data.newRating === undefined) return;
+        const ch = data.ratingChange || 0;
+        const el = document.getElementById('ratingChange');
+        el.innerText  = ch >= 0 ? `Rating: +${ch} ⭐` : `Rating: ${ch} ⭐`;
+        el.className  = 'rating-change' + (ch < 0 ? ' negative' : '');
+        document.getElementById('ratingDisplay').innerText = data.newRating;
+    })
+    .catch(() => { document.getElementById('ratingChange').innerText = ''; });
 }
 
 /* ================= HISTORY & TURN ================= */
@@ -270,11 +306,7 @@ function loadHistory() {
         .then(r => r.json()).then(list => {
             const ul = document.getElementById(color + 'History');
             ul.innerHTML = '';
-            list.forEach(m => {
-                const li = document.createElement('li');
-                li.innerText = m;
-                ul.appendChild(li);
-            });
+            list.forEach(m => { const li = document.createElement('li'); li.innerText = m; ul.appendChild(li); });
             ul.scrollTop = ul.scrollHeight;
         });
     });
@@ -286,15 +318,11 @@ function loadTurn() {
     .then(raw => {
         const turn = raw.replace(/['"]/g,'').trim();
         activeTurn = turn;
-        document.getElementById('turn').innerText = 'Turn: ' + turn;
-
-        // timer row highlight
-        document.getElementById('whiteTimerRow').className = 'timer-row' + (turn==='white' ? ' active' : '');
-        document.getElementById('blackTimerRow').className = 'timer-row' + (turn==='black' ? ' active' : '');
-
-        // player label highlight
-        document.getElementById('whiteLabel').className = 'player-label' + (turn==='white' ? ' active' : '');
-        document.getElementById('blackLabel').className = 'player-label' + (turn==='black' ? ' active' : '');
+        document.getElementById('turn').innerText = 'Turn: ' + turn.charAt(0).toUpperCase() + turn.slice(1);
+        document.getElementById('whiteTimerRow').className = 'timer-row'+(turn==='white'?' active':'');
+        document.getElementById('blackTimerRow').className = 'timer-row'+(turn==='black'?' active':'');
+        document.getElementById('whiteLabel').className = 'player-label'+(turn==='white'?' active':'');
+        document.getElementById('blackLabel').className = 'player-label'+(turn==='black'?' active':'');
     });
 }
 
@@ -305,63 +333,51 @@ function startTimer() {
         if (gameOver) return;
         if (activeTurn === 'white') {
             whiteTime--;
-            const el = document.getElementById('whiteTimer');
-            el.innerText = fmt(whiteTime);
-            if (whiteTime <= 30) el.parentElement.classList.add('low');
-            if (whiteTime <= 0) handleTimeout('white');
+            document.getElementById('whiteTimer').innerText = fmt(whiteTime);
+            if (whiteTime <= 30) document.getElementById('whiteTimerRow').classList.add('low');
+            if (whiteTime <= 0)  { clearInterval(timerInterval); handleTimeout('white'); }
         } else {
             blackTime--;
-            const el = document.getElementById('blackTimer');
-            el.innerText = fmt(blackTime);
-            if (blackTime <= 30) el.parentElement.classList.add('low');
-            if (blackTime <= 0) handleTimeout('black');
+            document.getElementById('blackTimer').innerText = fmt(blackTime);
+            if (blackTime <= 30) document.getElementById('blackTimerRow').classList.add('low');
+            if (blackTime <= 0)  { clearInterval(timerInterval); handleTimeout('black'); }
         }
     }, 1000);
 }
 
-function handleTimeout(loserColor) {
-    clearInterval(timerInterval);
+function handleTimeout(loser) {
     gameOver = true;
-    const winner = loserColor === 'white' ? 'black' : 'white';
-
-    fetch(`/api/games/${gameId}/timeout?loserColor=${loserColor}`, {
+    const winner = loser === 'white' ? 'black' : 'white';
+    fetch(`/api/games/${gameId}/timeout?loserColor=${loser}`, {
         method: 'POST', headers: { 'Authorization': authHeader }
-    })
-    .then(() => {
-        const icon = winner === 'white' ? '♔' : '♚';
-        document.getElementById('resultIcon').innerText  = icon;
-        document.getElementById('resultTitle').innerText = `${winner.charAt(0).toUpperCase()+winner.slice(1)} Wins!`;
-        document.getElementById('resultMsg').innerText   = `${loserColor.charAt(0).toUpperCase()+loserColor.slice(1)} ran out of time!`;
-        document.getElementById('ratingChange').innerText = '';
-        document.getElementById('gameOverModal').classList.remove('hidden');
-        updateRating(winner);
+    }).then(() => {
+        const res = winner === 'white' ? 'WHITE_WIN' : 'BLACK_WIN';
+        const L = loser.charAt(0).toUpperCase()+loser.slice(1);
+        const W = winner.charAt(0).toUpperCase()+winner.slice(1);
+        showModal(res, `${L} ran out of time! ${W} wins!`);
     });
 }
 
 function switchTimer() { activeTurn = activeTurn === 'white' ? 'black' : 'white'; }
-function fmt(s){ return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; }
+function fmt(s){return`${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;}
 
 /* ================= RESET & UNDO ================= */
 function resetGame() {
+    clearInterval(timerInterval);
     fetch(`/api/games/${gameId}/reset`, { method: 'POST', headers: { 'Authorization': authHeader } })
     .then(() => {
-        gameOver = false;
-        whiteTime = 600; blackTime = 600; activeTurn = 'white';
-        document.getElementById('whiteTimer').innerText = '10:00';
-        document.getElementById('blackTimer').innerText = '10:00';
-        document.getElementById('whiteTimer').parentElement.classList.remove('low');
-        document.getElementById('blackTimer').parentElement.classList.remove('low');
+        gameOver=false; whiteTime=600; blackTime=600; activeTurn='white';
+        document.getElementById('whiteTimer').innerText='10:00';
+        document.getElementById('blackTimer').innerText='10:00';
+        document.getElementById('whiteTimerRow').classList.remove('low');
+        document.getElementById('blackTimerRow').classList.remove('low');
         document.getElementById('gameOverModal').classList.add('hidden');
-        initGame();
-        startTimer();
+        initGame(); startTimer();
     });
 }
 
 function undoMove() {
-    if (gameOver) {
-        gameOver = false;
-        document.getElementById('gameOverModal').classList.add('hidden');
-    }
+    if (gameOver) { gameOver=false; document.getElementById('gameOverModal').classList.add('hidden'); }
     fetch(`/api/games/${gameId}/undo`, { method:'POST', headers:{'Authorization':authHeader} })
-    .then(() => { initGame(); });
+    .then(() => initGame());
 }

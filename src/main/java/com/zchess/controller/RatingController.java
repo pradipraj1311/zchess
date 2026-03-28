@@ -2,6 +2,7 @@ package com.zchess.controller;
 
 import java.util.List;
 
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +20,7 @@ public class RatingController {
         this.ratingService = ratingService;
     }
 
-    // leaderboard - badha ratings
+    // leaderboard
     @GetMapping
     public List<Rating> getAllRatings() {
         return ratingService.getAllRatings();
@@ -30,9 +31,6 @@ public class RatingController {
     public ResponseEntity<?> getMyRating(Authentication auth) {
         return ResponseEntity.ok(ratingService.getRatingByUsername(auth.getName()));
     }
-
-    // game result submit karo - rating update thase
-    // result: "white" = white jityo, "black" = black jityo, "draw" = draw
     @PostMapping("/update")
     public ResponseEntity<?> updateRating(
             @RequestParam String whitePlayer,
@@ -50,4 +48,16 @@ public class RatingController {
         ratingService.updateRatings(whitePlayer, blackPlayer, score);
         return ResponseEntity.ok("Ratings updated successfully");
     }
+    // solo update - white player vs local black (no account)
+    // result: "white" | "black" | "draw"
+    @PostMapping("/update-solo")
+    public ResponseEntity<?> updateSoloRating(
+            @RequestParam String username,
+            @RequestParam String result) {
+ 
+        RatingService.SoloRatingResult res = ratingService.updateSoloRating(username, result);
+        return ResponseEntity.ok(res);
+    }
+    
+    
 }

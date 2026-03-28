@@ -23,94 +23,98 @@ public class GameController {
         this.gameService = gameService;
     }
 
-    // ================= GAME CRUD =================
-
-    // create game - logged in user automatically playerWhite bane
+    // CREATE GAME
     @PostMapping
     public ResponseEntity<?> createGame(Authentication auth) {
-        String username = auth.getName();
-        return ResponseEntity.ok(gameService.createGame(username));
+        // reset board state for new game / new user
+        moveService.reset();
+        return ResponseEntity.ok(gameService.createGame(auth.getName()));
     }
 
-    // get ALL games - ADMIN only
+    // ALL GAMES - admin only
     @GetMapping
     public ResponseEntity<?> getAllGames(Authentication auth) {
         boolean isAdmin = auth.getAuthorities()
                 .contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
-        if (!isAdmin) {
-            return ResponseEntity.status(403).body("Access denied: Admins only");
-        }
+        if (!isAdmin) return ResponseEntity.status(403).body("Admins only");
         return ResponseEntity.ok(gameService.getAllGames());
     }
 
-    // get MY games - logged in user potani games joi shake
+    // MY GAMES
     @GetMapping("/my")
     public ResponseEntity<?> getMyGames(Authentication auth) {
-        String username = auth.getName();
-        return ResponseEntity.ok(gameService.getGamesByUser(username));
+        return ResponseEntity.ok(gameService.getGamesByUser(auth.getName()));
     }
 
-    // get game by id
     @GetMapping("/{id}")
     public ResponseEntity<?> getGame(@PathVariable Long id) {
         return ResponseEntity.ok(gameService.getGame(id));
     }
 
-    // delete game - ADMIN only
+    // DELETE - admin only
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteGame(@PathVariable Long id, Authentication auth) {
         boolean isAdmin = auth.getAuthorities()
                 .contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
-        if (!isAdmin) {
-            return ResponseEntity.status(403).body("Access denied: Admins only");
-        }
+        if (!isAdmin) return ResponseEntity.status(403).body("Admins only");
         gameService.deleteGame(id);
         return ResponseEntity.ok("Game deleted");
     }
 
-    // ================= GAME PLAY =================
-
-    // get board state
+    // BOARD
     @GetMapping("/{id}/board")
     public String[][] board(@PathVariable Long id) {
         return moveService.getBoard();
     }
 
-    // make a move - 200 if valid, 400 if invalid
+    // MOVE - returns OK | WHITE_WIN | BLACK_WIN | STALEMATE | INVALID(400)
     @PostMapping("/{id}/move")
     public ResponseEntity<?> move(@PathVariable Long id, @RequestBody Move move) {
-        boolean success = moveService.move(id, move);
-        if (!success) {
-            return ResponseEntity.badRequest().body("Invalid move");
+        String result = moveService.move(id, move);
+        if (result.equals("INVALID")) {
+            return ResponseEntity.badRequest().body("INVALID");
         }
-        return ResponseEntity.ok(moveService.getBoard());
+        return ResponseEntity.ok(result);
     }
 
-    // get white move history
+    // GAME RESULT
+    @GetMapping("/{id}/result")
+    public String result(@PathVariable Long id) {
+        return moveService.getGameResult();
+    }
+
+    // TIMEOUT
+    @PostMapping("/{id}/timeout")
+    public ResponseEntity<?> timeout(@PathVariable Long id,
+                                     @RequestParam String loserColor) {
+        String result = moveService.declareTimeout(id, loserColor);
+        return ResponseEntity.ok(result);
+    }
+
+    // HISTORY
     @GetMapping("/{id}/history/white")
     public List<String> getWhiteHistory(@PathVariable Long id) {
         return moveService.getWhiteHistory();
     }
 
-    // get black move history
     @GetMapping("/{id}/history/black")
     public List<String> getBlackHistory(@PathVariable Long id) {
         return moveService.getBlackHistory();
     }
 
-    // get current turn
+    // TURN
     @GetMapping("/{id}/turn")
     public String turn(@PathVariable Long id) {
         return moveService.getTurn();
     }
 
-    // reset game
+    // RESET
     @PostMapping("/{id}/reset")
     public void reset(@PathVariable Long id) {
         moveService.reset();
     }
 
-    // undo last move
+    // UNDO
     @PostMapping("/{id}/undo")
     public void undo(@PathVariable Long id) {
         moveService.undo();

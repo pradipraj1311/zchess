@@ -19,38 +19,57 @@ public class GameService {
         this.userRepository = userRepository;
     }
 
-    // CREATE GAME - logged in user playerWhite bane
+    // CREATE GAME
     public Game createGame(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
         Game game = new Game();
-        game.setPlayerWhite(user); // game bananaaro = white player
+        game.setPlayerWhite(user);
         game.setStatus("Ongoing");
         game.setCurrentTurn("white");
-
         return gameRepository.save(game);
     }
 
-    // GET ALL GAMES - admin only
+    // UPDATE GAME STATUS - Ongoing → Completed/Draw
+    public void updateGameStatus(Long gameId, String result) {
+        try {
+            Game game = gameRepository.findById(gameId)
+                    .orElseThrow(() -> new RuntimeException("Game not found"));
+
+            switch (result) {
+                case "WHITE_WIN":
+                    game.setStatus("White Won");
+                    break;
+                case "BLACK_WIN":
+                    game.setStatus("Black Won");
+                    break;
+                case "STALEMATE":
+                    game.setStatus("Draw");
+                    break;
+                default:
+                    game.setStatus("Ongoing");
+            }
+            gameRepository.save(game);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public List<Game> getAllGames() {
         return gameRepository.findAll();
     }
 
-    // GET GAME BY ID
     public Game getGame(Long id) {
         return gameRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Game not found"));
     }
 
-    // GET GAMES BY USER - potani j games
     public List<Game> getGamesByUser(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return gameRepository.findByPlayerWhite(user);
     }
 
-    // DELETE GAME - admin only
     public void deleteGame(Long id) {
         gameRepository.deleteById(id);
     }

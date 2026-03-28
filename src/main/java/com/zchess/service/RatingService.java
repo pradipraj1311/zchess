@@ -13,90 +13,114 @@ import com.zchess.repository.UserRepository;
 public class RatingService {
 
     private final RatingRepository ratingRepository;
-    private final UserRepository userRepository;
+    private final UserRepository   userRepository;
 
-    // ELO K-factor - nava players mate 32, experienced mate 16
-    private static final int K_FACTOR = 32;
+    private static final int K       = 32;
+    private static final int BASE    = 1500; // assumed opponent rating (local player)
+    private static final int MIN_RATING = 100;
 
     public RatingService(RatingRepository ratingRepository, UserRepository userRepository) {
         this.ratingRepository = ratingRepository;
-        this.userRepository = userRepository;
+        this.userRepository   = userRepository;
     }
 
-    // navo user register thay tyare rating create karo (1000 thi sharu)
     public Rating createRating(User user) {
-        Rating rating = new Rating(user);
-        return ratingRepository.save(rating);
+        Rating r = new Rating(user);
+        return ratingRepository.save(r);
     }
 
-    // user ni rating get karo - na hoy to create karo
     public Rating getRating(User user) {
-        return ratingRepository.findByUser(user)
-                .orElseGet(() -> createRating(user));
+        return ratingRepository.findByUser(user).orElseGet(() -> createRating(user));
     }
 
-    // username thi rating get karo
     public Rating getRatingByUsername(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return getRating(user);
     }
 
-    // badha users ni ratings - leaderboard mate
     public List<Rating> getAllRatings() {
         return ratingRepository.findAllByOrderByRatingDesc();
     }
 
-    // ================= ELO CALCULATION =================
-    // result: 1.0 = white jityo, 0.0 = black jityo, 0.5 = draw
+    // ================= ELO - TWO PLAYERS =================
+    // result: 1.0=white win, 0.0=black win, 0.5=draw
     public void updateRatings(String whiteUsername, String blackUsername, double result) {
+        User wUser = userRepository.findByUsername(whiteUsername)
+                .orElseThrow(() -> new RuntimeException("White not found"));
+        User bUser = userRepository.findByUsername(blackUsername)
+                .orElseThrow(() -> new RuntimeException("Black not found"));
 
-        User whiteUser = userRepository.findByUsername(whiteUsername)
-                .orElseThrow(() -> new RuntimeException("White player not found"));
-        User blackUser = userRepository.findByUsername(blackUsername)
-                .orElseThrow(() -> new RuntimeException("Black player not found"));
+        Rating wRating = getRating(wUser);
+        Rating bRating = getRating(bUser);
 
-        Rating whiteRating = getRating(whiteUser);
-        Rating blackRating = getRating(blackUser);
+        int rA = wRating.getRating(), rB = bRating.getRating();
+        double eA = 1.0 / (1.0 + Math.pow(10, (rB - rA) / 400.0));
+        double eB = 1.0 / (1.0 + Math.pow(10, (rA - rB) / 400.0));
 
-        int rA = whiteRating.getRating();
-        int rB = blackRating.getRating();
+        int newA = Math.max(MIN_RATING, (int) Math.round(rA + K * (result - eA)));
+        int newB = Math.max(MIN_RATING, (int) Math.round(rB + K * ((1 - result) - eB)));
 
-        // ELO expected score calculate karo
-        // E_A = 1 / (1 + 10^((R_B - R_A) / 400))
-        double expectedWhite = 1.0 / (1.0 + Math.pow(10, (rB - rA) / 400.0));
-        double expectedBlack = 1.0 / (1.0 + Math.pow(10, (rA - rB) / 400.0));
+        // white
+        wRating.setRating(newA);
+        wRating.setGamesPlayed(wRating.getGamesPlayed() + 1);
+        if (result == 1.0)      wRating.setWins(wRating.getWins() + 1);
+        else if (result == 0.0) wRating.setLosses(wRating.getLosses() + 1);
+        else                    wRating.setDraws(wRating.getDraws() + 1);
 
-        // actual score
-        double actualWhite = result;        // 1.0=win, 0.5=draw, 0.0=loss
-        double actualBlack = 1.0 - result;  // opposite
+        // black
+        bRating.setRating(newB);
+        bRating.setGamesPlayed(bRating.getGamesPlayed() + 1);
+        if (result == 0.0)      bRating.setWins(bRating.getWins() + 1);
+        else if (result == 1.0) bRating.setLosses(bRating.getLosses() + 1);
+        else                    bRating.setDraws(bRating.getDraws() + 1);
 
-        // new rating = old + K * (actual - expected)
-        int newWhiteRating = (int) Math.round(rA + K_FACTOR * (actualWhite - expectedWhite));
-        int newBlackRating = (int) Math.round(rB + K_FACTOR * (actualBlack - expectedBlack));
+        ratingRepository.save(wRating);
+        ratingRepository.save(bRating);
+    }
 
-        // minimum rating 100 thi niche na jay
-        newWhiteRating = Math.max(newWhiteRating, 100);
-        newBlackRating = Math.max(newBlackRating, 100);
+    // ================= ELO - SOLO (vs local black player) =================
+    // Black has no account - white player rated against BASE opponent (1500)
+    // result: "white" | "black" | "draw"
+    public SoloRatingResult updateSoloRating(String username, String result) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Rating rating = getRating(user);
 
-        // white update
-        whiteRating.setRating(newWhiteRating);
-        whiteRating.setGamesPlayed(whiteRating.getGamesPlayed() + 1);
-        if (result == 1.0) whiteRating.setWins(whiteRating.getWins() + 1);
-        else if (result == 0.0) whiteRating.setLosses(whiteRating.getLosses() + 1);
-        else whiteRating.setDraws(whiteRating.getDraws() + 1);
+        int oldRating = rating.getRating();
+        double actual;
 
-        // black update
-        blackRating.setRating(newBlackRating);
-        blackRating.setGamesPlayed(blackRating.getGamesPlayed() + 1);
-        if (result == 0.0) blackRating.setWins(blackRating.getWins() + 1);
-        else if (result == 1.0) blackRating.setLosses(blackRating.getLosses() + 1);
-        else blackRating.setDraws(blackRating.getDraws() + 1);
+        switch (result.toLowerCase()) {
+            case "white": actual = 1.0; break;
+            case "black": actual = 0.0; break;
+            default:      actual = 0.5; break;
+        }
 
-        ratingRepository.save(whiteRating);
-        ratingRepository.save(blackRating);
+        // ELO vs BASE opponent
+        double expected = 1.0 / (1.0 + Math.pow(10, (BASE - oldRating) / 400.0));
+        int newRating   = Math.max(MIN_RATING, (int) Math.round(oldRating + K * (actual - expected)));
 
-        System.out.println("Rating updated: " + whiteUsername + " " + rA + " -> " + newWhiteRating);
-        System.out.println("Rating updated: " + blackUsername + " " + rB + " -> " + newBlackRating);
+        rating.setRating(newRating);
+        rating.setGamesPlayed(rating.getGamesPlayed() + 1);
+
+        if (actual == 1.0)      rating.setWins(rating.getWins() + 1);
+        else if (actual == 0.0) rating.setLosses(rating.getLosses() + 1);
+        else                    rating.setDraws(rating.getDraws() + 1);
+
+        ratingRepository.save(rating);
+
+        System.out.println("Solo rating: " + username + " " + oldRating + " -> " + newRating + " (" + result + ")");
+
+        return new SoloRatingResult(newRating, newRating - oldRating);
+    }
+
+    // ================= INNER CLASS - Result DTO =================
+    public static class SoloRatingResult {
+        public int newRating;
+        public int ratingChange;
+        public SoloRatingResult(int newRating, int ratingChange) {
+            this.newRating    = newRating;
+            this.ratingChange = ratingChange;
+        }
     }
 }

@@ -41,6 +41,7 @@ public class Game {
         this.currentTurn = "white";
         this.createdAt = LocalDateTime.now();
     }
+   
 
     public Long getId() { return id; }
 
