@@ -10,12 +10,13 @@
 
 <div class="navbar">
     <h1>♔ zChess Admin</h1>
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <div class="nav-tabs">
-            <button class="nav-tab active" onclick="showTab('dashboard', this)">Dashboard</button>
-            <button class="nav-tab"        onclick="showTab('users', this)">Users</button>
-            <button class="nav-tab"        onclick="showTab('games', this)">Games</button>
-            <button class="nav-tab"        onclick="showTab('ratings', this)">Ratings</button>
+            <button class="nav-tab active" onclick="showTab('dashboard',this)">Dashboard</button>
+            <button class="nav-tab"        onclick="showTab('users',this)">Users</button>
+            <button class="nav-tab"        onclick="showTab('games',this)">Games</button>
+            <button class="nav-tab"        onclick="showTab('moves',this)">Moves</button>
+            <button class="nav-tab"        onclick="showTab('ratings',this)">Ratings</button>
         </div>
         <button class="logout-btn" onclick="logout()">⏏ Logout</button>
     </div>
@@ -30,6 +31,7 @@
             <div class="stat-card"><h3 id="totalGames">-</h3><p>Total Games</p></div>
             <div class="stat-card"><h3 id="ongoingGames">-</h3><p>Ongoing</p></div>
             <div class="stat-card"><h3 id="completedGames">-</h3><p>Completed</p></div>
+            <div class="stat-card"><h3 id="totalMoves">-</h3><p>Total Moves</p></div>
         </div>
     </div>
 
@@ -60,9 +62,27 @@
         <div class="table-wrap">
             <table>
                 <thead>
-                    <tr><th>ID</th><th>White</th><th>Black</th><th>Status</th><th>Turn</th><th>Created</th><th>Action</th></tr>
+                    <tr><th>ID</th><th>White Player</th><th>Black Player</th><th>Status</th><th>Turn</th><th>Created</th><th>Action</th></tr>
                 </thead>
                 <tbody id="gamesTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- MOVES -->
+    <div id="tab-moves" class="section">
+        <h2>Recent Moves</h2>
+        <div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <input id="moveGameId" placeholder="Filter by Game ID" style="padding:8px 12px;border-radius:7px;border:1px solid #444;background:#22223a;color:#eee;width:160px;">
+            <button class="btn-register" style="width:auto;padding:8px 16px;" onclick="loadMoves()">Search</button>
+            <button class="btn-register" style="width:auto;padding:8px 16px;background:#555;" onclick="document.getElementById('moveGameId').value='';loadMoves()">Show All</button>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr><th>ID</th><th>Game</th><th>Move#</th><th>Piece</th><th>Notation</th><th>From</th><th>To</th><th>Played At</th></tr>
+                </thead>
+                <tbody id="movesTable"></tbody>
             </table>
         </div>
     </div>
@@ -98,25 +118,36 @@
         document.querySelectorAll(".nav-tab").forEach(b => b.classList.remove("active"));
         document.getElementById("tab-" + tab).classList.add("active");
         btn.classList.add("active");
-        if (tab === 'users')   loadUsers();
-        if (tab === 'games')   loadGames();
-        if (tab === 'ratings') loadRatings();
         if (tab === 'dashboard') loadStats();
+        if (tab === 'users')     loadUsers();
+        if (tab === 'games')     loadGames();
+        if (tab === 'moves')     loadMoves();
+        if (tab === 'ratings')   loadRatings();
     }
 
+    // ── STATS ──
     function loadStats() {
         fetch("/api/users", { headers: { "Authorization": authHeader } })
-            .then(r => r.json()).then(u => document.getElementById("totalUsers").innerText = u.length)
+            .then(r => r.json())
+            .then(u => { document.getElementById("totalUsers").innerText = Array.isArray(u) ? u.length : '-'; })
             .catch(() => {});
 
         fetch("/api/games", { headers: { "Authorization": authHeader } })
-            .then(r => r.json()).then(games => {
-                document.getElementById("totalGames").innerText = games.length;
+            .then(r => r.json())
+            .then(games => {
+                if (!Array.isArray(games)) return;
+                document.getElementById("totalGames").innerText     = games.length;
                 document.getElementById("ongoingGames").innerText   = games.filter(g => g.status === "Ongoing").length;
                 document.getElementById("completedGames").innerText = games.filter(g => g.status !== "Ongoing").length;
             }).catch(() => {});
+
+        fetch("/api/moves/all", { headers: { "Authorization": authHeader } })
+            .then(r => r.json())
+            .then(m => { document.getElementById("totalMoves").innerText = Array.isArray(m) ? m.length : '-'; })
+            .catch(() => { document.getElementById("totalMoves").innerText = '-'; });
     }
 
+    // ── REGISTER USER ──
     function registerUser() {
         const username = document.getElementById("newUsername").value.trim();
         const password = document.getElementById("newPassword").value.trim();
@@ -132,81 +163,139 @@
             alert("User registered!");
             document.getElementById("newUsername").value = "";
             document.getElementById("newPassword").value = "";
-            loadStats();
+            loadStats(); loadUsers();
         })
         .catch(() => alert("Failed! Username may already exist."));
     }
 
+    // ── USERS ──
     function loadUsers() {
         fetch("/api/users", { headers: { "Authorization": authHeader } })
-        .then(r => r.json()).then(users => {
+        .then(r => r.json())
+        .then(users => {
+            if (!Array.isArray(users)) { document.getElementById("usersTable").innerHTML = "<tr><td colspan='4'>No data</td></tr>"; return; }
             const tb = document.getElementById("usersTable");
             tb.innerHTML = "";
             users.forEach(u => {
                 tb.innerHTML += `<tr>
-                    <td>${u.id}</td><td>${u.username}</td>
+                    <td>${u.id}</td>
+                    <td>${u.username}</td>
                     <td><span class="badge ${u.role==='ADMIN'?'badge-admin':'badge-user'}">${u.role}</span></td>
-                    <td><button class="btn-del" onclick="deleteUser(${u.id})">Delete</button></td>
+                    <td><button class="btn-del" onclick="deleteUser(${u.id}, '${u.username}')">Delete</button></td>
                 </tr>`;
             });
-        });
+        })
+        .catch(e => { document.getElementById("usersTable").innerHTML = "<tr><td colspan='4' style='color:#e74c3c'>Error loading users</td></tr>"; });
     }
 
-    function deleteUser(id) {
-        if (!confirm("Delete this user?")) return;
+    function deleteUser(id, username) {
+        if (!confirm(`Delete user "${username}"? This will also delete their games, moves and rating.`)) return;
         fetch(`/api/users/${id}`, { method: "DELETE", headers: { "Authorization": authHeader } })
-        .then(() => { loadUsers(); loadStats(); });
+        .then(r => {
+            if (!r.ok) throw new Error("Delete failed");
+            return r.json();
+        })
+        .then(() => { alert("User deleted!"); loadUsers(); loadStats(); })
+        .catch(e => alert("Delete failed! Check console."));
     }
 
+    // ── GAMES ──
     function loadGames() {
         fetch("/api/games", { headers: { "Authorization": authHeader } })
-        .then(r => r.json()).then(games => {
+        .then(r => r.json())
+        .then(games => {
+            if (!Array.isArray(games)) { document.getElementById("gamesTable").innerHTML = "<tr><td colspan='7'>No data</td></tr>"; return; }
             const tb = document.getElementById("gamesTable");
             tb.innerHTML = "";
+            if (games.length === 0) { tb.innerHTML = "<tr><td colspan='7' style='color:#aaa;text-align:center;padding:20px'>No games yet</td></tr>"; return; }
             games.forEach(g => {
-                const statusClass = g.status === 'Ongoing' ? 'badge-ongoing'
-                                  : g.status === 'White Won' ? 'badge-white'
-                                  : g.status === 'Black Won' ? 'badge-black'
-                                  : 'badge-draw';
+                // Safe access - playerWhite/Black can be null or object
+                const white = g.playerWhite ? g.playerWhite.username : '-';
+                const black = g.playerBlack ? g.playerBlack.username : '-';
+                const created = g.createdAt ? g.createdAt.substring(0, 16).replace('T', ' ') : '-';
+                const statusClass = g.status === 'Ongoing'    ? 'badge-ongoing'
+                                  : g.status === 'White Won'  ? 'badge-white'
+                                  : g.status === 'Black Won'  ? 'badge-black'
+                                  : g.status === 'Draw'       ? 'badge-draw' : 'badge-ongoing';
                 tb.innerHTML += `<tr>
                     <td>${g.id}</td>
-                    <td>${g.playerWhite ? g.playerWhite.username : '-'}</td>
-                    <td>${g.playerBlack ? g.playerBlack.username : '-'}</td>
-                    <td><span class="badge ${statusClass}">${g.status}</span></td>
-                    <td>${g.currentTurn}</td>
-                    <td>${g.createdAt ? g.createdAt.substring(0,10) : '-'}</td>
+                    <td>${white}</td>
+                    <td>${black}</td>
+                    <td><span class="badge ${statusClass}">${g.status || 'Ongoing'}</span></td>
+                    <td>${g.currentTurn || '-'}</td>
+                    <td>${created}</td>
                     <td><button class="btn-del" onclick="deleteGame(${g.id})">Delete</button></td>
                 </tr>`;
             });
-        });
+        })
+        .catch(() => { document.getElementById("gamesTable").innerHTML = "<tr><td colspan='7' style='color:#e74c3c'>Error loading games</td></tr>"; });
     }
 
     function deleteGame(id) {
-        if (!confirm("Delete this game?")) return;
+        if (!confirm("Delete game " + id + "?")) return;
         fetch(`/api/games/${id}`, { method: "DELETE", headers: { "Authorization": authHeader } })
         .then(() => { loadGames(); loadStats(); });
     }
 
+    // ── MOVES ──
+    function loadMoves() {
+        const gameIdFilter = document.getElementById("moveGameId").value.trim();
+        const url = gameIdFilter
+            ? `/api/moves/game/${gameIdFilter}`
+            : `/api/moves/all`;
+
+        fetch(url, { headers: { "Authorization": authHeader } })
+        .then(r => r.json())
+        .then(moves => {
+            if (!Array.isArray(moves)) { document.getElementById("movesTable").innerHTML = "<tr><td colspan='8'>No data</td></tr>"; return; }
+            const tb = document.getElementById("movesTable");
+            tb.innerHTML = "";
+            if (moves.length === 0) { tb.innerHTML = "<tr><td colspan='8' style='color:#aaa;text-align:center;padding:20px'>No moves found</td></tr>"; return; }
+            // Show latest 100
+            const recent = moves.slice(-100).reverse();
+            recent.forEach(m => {
+                const playedAt = m.playedAt ? m.playedAt.substring(0,16).replace('T',' ') : '-';
+                const gameId   = m.game ? m.game.id : (m.gameId || '-');
+                tb.innerHTML += `<tr>
+                    <td>${m.id}</td>
+                    <td>${gameId}</td>
+                    <td>${m.moveNumber}</td>
+                    <td>${m.piece || '-'}</td>
+                    <td><strong style="color:#f0d060">${m.notation || '-'}</strong></td>
+                    <td>${m.fromRow},${m.fromCol}</td>
+                    <td>${m.toRow},${m.toCol}</td>
+                    <td>${playedAt}</td>
+                </tr>`;
+            });
+        })
+        .catch(() => { document.getElementById("movesTable").innerHTML = "<tr><td colspan='8' style='color:#e74c3c'>Error loading moves</td></tr>"; });
+    }
+
+    // ── RATINGS ──
     function loadRatings() {
         fetch("/api/ratings", { headers: { "Authorization": authHeader } })
-        .then(r => r.json()).then(ratings => {
+        .then(r => r.json())
+        .then(ratings => {
+            if (!Array.isArray(ratings)) return;
             const tb = document.getElementById("ratingsTable");
             tb.innerHTML = "";
+            if (ratings.length === 0) { tb.innerHTML = "<tr><td colspan='7' style='color:#aaa;text-align:center;padding:20px'>No ratings yet</td></tr>"; return; }
             ratings.forEach((r, i) => {
                 const rankClass = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
                 const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+                const username = r.user ? r.user.username : '-';
                 tb.innerHTML += `<tr class="${rankClass}">
                     <td>${medal}</td>
-                    <td>${r.user ? r.user.username : '-'}</td>
+                    <td>${username}</td>
                     <td><strong>${r.rating}</strong></td>
-                    <td>${r.wins}</td><td>${r.losses}</td>
-                    <td>${r.draws}</td><td>${r.gamesPlayed}</td>
+                    <td>${r.wins}</td>
+                    <td>${r.losses}</td>
+                    <td>${r.draws}</td>
+                    <td>${r.gamesPlayed}</td>
                 </tr>`;
             });
-        }).catch(() => {
-            document.getElementById("ratingsTable").innerHTML =
-                "<tr><td colspan='7' style='color:#aaa;text-align:center;padding:20px'>No ratings yet</td></tr>";
-        });
+        })
+        .catch(() => { document.getElementById("ratingsTable").innerHTML = "<tr><td colspan='7' style='color:#e74c3c'>Error loading ratings</td></tr>"; });
     }
 </script>
 </body>

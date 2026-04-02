@@ -1,5 +1,4 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 body { background: #1a1a2e; color: #eee; font-family: 'Segoe UI', Tahoma, sans-serif; min-height: 100vh; }
 
 .navbar {
@@ -8,8 +7,7 @@ body { background: #1a1a2e; color: #eee; font-family: 'Segoe UI', Tahoma, sans-s
     border-bottom: 2px solid #f0c040; flex-wrap: wrap; gap: 10px;
 }
 .navbar h1 { color: #f0c040; font-size: clamp(1.1rem, 4vw, 1.5rem); }
-
-.nav-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.nav-tabs   { display: flex; gap: 6px; flex-wrap: wrap; }
 .nav-tab {
     padding: 7px 14px; border-radius: 6px; border: none;
     cursor: pointer; font-weight: 600; font-size: 0.85rem;
@@ -24,23 +22,27 @@ body { background: #1a1a2e; color: #eee; font-family: 'Segoe UI', Tahoma, sans-s
 }
 .logout-btn:hover { filter: brightness(1.2); }
 
-.main { padding: 20px; max-width: 1000px; margin: 0 auto; }
+.main { padding: 20px; max-width: 1100px; margin: 0 auto; }
 
+/* STATS */
 .stats { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 24px; }
 .stat-card {
-    flex: 1 1 140px; background: #16213e; border-radius: 10px;
+    flex: 1 1 130px; background: #16213e; border-radius: 10px;
     padding: 16px; text-align: center; border: 1px solid #2a2a4e;
 }
-.stat-card h3 { font-size: 2rem; color: #f0c040; }
+.stat-card h3 { font-size: 1.8rem; color: #f0c040; }
 .stat-card p  { color: #aaa; font-size: 0.8rem; margin-top: 4px; }
 
+/* SECTIONS */
 .section { display: none; }
 .section.active { display: block; }
 .section h2 { color: #f0c040; font-size: 1.1rem; margin-bottom: 14px; border-bottom: 1px solid #333; padding-bottom: 8px; }
 
+/* REGISTER FORM */
 .reg-form {
     background: #16213e; border-radius: 10px; padding: 20px;
-    max-width: 400px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;
+    max-width: 400px; display: flex; flex-direction: column;
+    gap: 12px; margin-bottom: 24px;
 }
 .reg-form input, .reg-form select {
     padding: 10px 14px; border-radius: 7px; border: 1px solid #444;
@@ -50,37 +52,42 @@ body { background: #1a1a2e; color: #eee; font-family: 'Segoe UI', Tahoma, sans-s
 
 .btn-register {
     padding: 11px; background: #27ae60; color: #fff;
-    border: none; border-radius: 7px; cursor: pointer; font-weight: 600; font-size: 0.95rem;
-    transition: background 0.2s;
+    border: none; border-radius: 7px; cursor: pointer;
+    font-weight: 600; font-size: 0.95rem; width: 100%;
 }
 .btn-register:hover { background: #219a52; }
 
+/* TABLE */
 .table-wrap { overflow-x: auto; border-radius: 8px; }
 table { width: 100%; border-collapse: collapse; min-width: 400px; }
 th { background: #0f3460; color: #f0c040; padding: 10px 12px; text-align: left; font-size: 0.82rem; text-transform: uppercase; }
 td { padding: 9px 12px; font-size: 0.85rem; border-bottom: 1px solid #2a2a3e; }
 tr:hover td { background: #1e2a4a; }
 
+/* BADGES */
 .badge { padding: 2px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; }
 .badge-admin   { background: #c0392b22; color: #e74c3c; border: 1px solid #c0392b55; }
 .badge-user    { background: #27ae6022; color: #27ae60; border: 1px solid #27ae6055; }
 .badge-ongoing { background: #f0c04022; color: #f0c040; border: 1px solid #f0c04055; }
 .badge-white   { background: #ecf0f122; color: #ecf0f1; border: 1px solid #ecf0f155; }
-.badge-black   { background: #2c3e5022; color: #95a5a6; border: 1px solid #95a5a655; }
-.badge-draw    { background: #8e44ad22; color: #9b59b6; border: 1px solid #9b59b655; }
+.badge-black   { background: #7f8c8d22; color: #95a5a6; border: 1px solid #7f8c8d55; }
+.badge-draw    { background: #9b59b622; color: #9b59b6; border: 1px solid #9b59b655; }
 
+/* DELETE BUTTON */
 .btn-del {
     padding: 4px 10px; background: #c0392b; color: #fff;
-    border: none; border-radius: 5px; cursor: pointer; font-size: 0.78rem;
-    transition: background 0.2s;
+    border: none; border-radius: 5px; cursor: pointer;
+    font-size: 0.78rem; transition: background 0.2s;
 }
 .btn-del:hover { background: #a93226; }
 
+/* LEADERBOARD */
 .rank-1 td { color: #f0c040; font-weight: 700; }
 .rank-2 td { color: #bdc3c7; }
 .rank-3 td { color: #cd7f32; }
 
-@media (max-width: 500px) {
+@media (max-width: 600px) {
     .navbar { flex-direction: column; align-items: flex-start; }
     .reg-form { max-width: 100%; }
+    .stat-card h3 { font-size: 1.4rem; }
 }

@@ -1,7 +1,6 @@
 package com.zchess.config;
 
 import org.springframework.context.annotation.Bean;
-
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
@@ -16,30 +15,14 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-
-             
                 .requestMatchers("/api/users/register").permitAll()
                 .requestMatchers("/api/users/login").permitAll()
-
-             
-                .requestMatchers(
-                    "/",
-                    "/chess.html",
-                    "/chess.js",
-                    "/chess.css",
-                    "/admin.html",
-                    "/pieces/**"
-                ).permitAll()
-
-           
+                .requestMatchers("/", "/chess.html", "/chess.js", "/chess.css",
+                                 "/admin.html", "/admin.css", "/pieces/**").permitAll()
                 .requestMatchers("/api/health").permitAll()
-
-             
                 .anyRequest().authenticated()
             )
-          
-            .httpBasic(httpBasic -> {});
-
+            .httpBasic(h -> {});
         return http.build();
     }
 

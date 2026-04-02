@@ -32,7 +32,6 @@ public class GameController {
         this.gameService = gameService;
     }
 
-    // CREATE GAME - reset board and set active game ID
     @PostMapping
     public ResponseEntity<?> createGame(Authentication auth) {
         moveService.reset(); // clear old state
@@ -42,7 +41,7 @@ public class GameController {
         return ResponseEntity.ok(game);
     }
 
-    // ALL GAMES - admin only
+  
     @GetMapping
     public ResponseEntity<?> getAllGames(Authentication auth) {
         boolean isAdmin = auth.getAuthorities()
@@ -51,19 +50,18 @@ public class GameController {
         return ResponseEntity.ok(gameService.getAllGames());
     }
 
-    // MY GAMES - logged-in user's games
+   
     @GetMapping("/my")
     public ResponseEntity<?> getMyGames(Authentication auth) {
         return ResponseEntity.ok(gameService.getGamesByUser(auth.getName()));
     }
 
-    // GET GAME BY ID
+
     @GetMapping("/{id}")
     public ResponseEntity<?> getGame(@PathVariable Long id) {
         return ResponseEntity.ok(gameService.getGame(id));
     }
 
-    // DELETE GAME - admin only
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteGame(@PathVariable Long id, Authentication auth) {
         boolean isAdmin = auth.getAuthorities()
