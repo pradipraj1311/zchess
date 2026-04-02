@@ -1,5 +1,6 @@
 package com.zchess.engine;
 
+
 public class CheckValidator {
 
     public static boolean isKingInCheck(String[][] board, boolean whiteKing) {

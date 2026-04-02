@@ -1,5 +1,6 @@
 package com.zchess.engine;
 
+
 public class RookValidator {
 
     public static boolean isValid(String[][] board, int fr, int fc, int tr, int tc) {

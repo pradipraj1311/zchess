@@ -1,5 +1,6 @@
 package com.zchess.engine;
 
+
 public class CheckmateDetector {
 
     // check if the given color has NO legal moves left

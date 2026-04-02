@@ -1,5 +1,6 @@
 package com.zchess.engine;
 
+
 public class CheckDetector {
 
     public static boolean isKingInCheck(String[][] board, char color) {

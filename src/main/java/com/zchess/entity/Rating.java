@@ -2,6 +2,7 @@ package com.zchess.entity;
 
 import jakarta.persistence.*;
 
+
 @Entity
 @Table(name = "ratings")
 public class Rating {
@@ -9,13 +10,10 @@ public class Rating {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    // one user - one rating
     @OneToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // starting rating 1000
     private int rating = 1000;
 
     private int wins = 0;

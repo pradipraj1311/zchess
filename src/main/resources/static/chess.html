@@ -49,6 +49,7 @@
 <!-- GAME SCREEN -->
 <div id="gameScreen" class="hidden">
 
+    <!-- TOP BAR -->
     <div class="top-bar">
         <h2 id="turn">Turn: White</h2>
         <div class="user-info">
@@ -58,23 +59,28 @@
         </div>
     </div>
 
+    <!-- GAME BODY -->
     <div class="game-body">
 
         <!-- BOARD SECTION -->
         <div class="board-section">
+
+            <!-- Black player label -->
             <div class="player-label" id="blackLabel">♚ Black</div>
 
-            <div class="board-wrapper">
-                <!-- Rank numbers: 8 down to 1 -->
-                <div class="rank-col" id="rankCol"></div>
+            <!-- TURN BANNER - directly above board -->
+            <div class="turn-banner turn-white" id="turnBanner">● White's Turn</div>
 
+            <!-- Board + coordinates -->
+            <div class="board-wrapper">
+                <div class="rank-col" id="rankCol"></div>
                 <div class="board-col-wrap">
                     <div id="board"></div>
-                    <!-- File letters: a to h -->
                     <div class="file-row" id="fileRow"></div>
                 </div>
             </div>
 
+            <!-- White player label -->
             <div class="player-label active" id="whiteLabel">♔ White (You)</div>
         </div>
 

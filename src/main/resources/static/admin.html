@@ -10,11 +10,14 @@
 
 <div class="navbar">
     <h1>♔ zChess Admin</h1>
-    <div class="nav-tabs">
-        <button class="nav-tab active" onclick="showTab('dashboard', this)">Dashboard</button>
-        <button class="nav-tab"        onclick="showTab('users', this)">Users</button>
-        <button class="nav-tab"        onclick="showTab('games', this)">Games</button>
-        <button class="nav-tab"        onclick="showTab('ratings', this)">Ratings</button>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('dashboard', this)">Dashboard</button>
+            <button class="nav-tab"        onclick="showTab('users', this)">Users</button>
+            <button class="nav-tab"        onclick="showTab('games', this)">Games</button>
+            <button class="nav-tab"        onclick="showTab('ratings', this)">Ratings</button>
+        </div>
+        <button class="logout-btn" onclick="logout()">⏏ Logout</button>
     </div>
 </div>
 
@@ -25,6 +28,8 @@
         <div class="stats">
             <div class="stat-card"><h3 id="totalUsers">-</h3><p>Total Users</p></div>
             <div class="stat-card"><h3 id="totalGames">-</h3><p>Total Games</p></div>
+            <div class="stat-card"><h3 id="ongoingGames">-</h3><p>Ongoing</p></div>
+            <div class="stat-card"><h3 id="completedGames">-</h3><p>Completed</p></div>
         </div>
     </div>
 
@@ -40,13 +45,10 @@
             </select>
             <button class="btn-register" onclick="registerUser()">Register</button>
         </div>
-
         <h2>All Users</h2>
         <div class="table-wrap">
             <table>
-                <thead>
-                    <tr><th>ID</th><th>Username</th><th>Role</th><th>Action</th></tr>
-                </thead>
+                <thead><tr><th>ID</th><th>Username</th><th>Role</th><th>Action</th></tr></thead>
                 <tbody id="usersTable"></tbody>
             </table>
         </div>
@@ -86,6 +88,11 @@
 
     window.onload = () => { loadStats(); };
 
+    function logout() {
+        sessionStorage.clear();
+        window.location.href = "/chess.html";
+    }
+
     function showTab(tab, btn) {
         document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
         document.querySelectorAll(".nav-tab").forEach(b => b.classList.remove("active"));
@@ -94,13 +101,20 @@
         if (tab === 'users')   loadUsers();
         if (tab === 'games')   loadGames();
         if (tab === 'ratings') loadRatings();
+        if (tab === 'dashboard') loadStats();
     }
 
     function loadStats() {
         fetch("/api/users", { headers: { "Authorization": authHeader } })
-            .then(r => r.json()).then(u => document.getElementById("totalUsers").innerText = u.length);
+            .then(r => r.json()).then(u => document.getElementById("totalUsers").innerText = u.length)
+            .catch(() => {});
+
         fetch("/api/games", { headers: { "Authorization": authHeader } })
-            .then(r => r.json()).then(g => document.getElementById("totalGames").innerText = g.length);
+            .then(r => r.json()).then(games => {
+                document.getElementById("totalGames").innerText = games.length;
+                document.getElementById("ongoingGames").innerText   = games.filter(g => g.status === "Ongoing").length;
+                document.getElementById("completedGames").innerText = games.filter(g => g.status !== "Ongoing").length;
+            }).catch(() => {});
     }
 
     function registerUser() {
@@ -108,7 +122,6 @@
         const password = document.getElementById("newPassword").value.trim();
         const role     = document.getElementById("newRole").value;
         if (!username || !password) { alert("Fill all fields!"); return; }
-
         fetch("/api/users/register", {
             method: "POST",
             headers: { "Content-Type": "application/json", "Authorization": authHeader },
@@ -116,12 +129,12 @@
         })
         .then(r => { if (!r.ok) throw new Error(); return r.json(); })
         .then(() => {
-            alert("User registered successfully!");
+            alert("User registered!");
             document.getElementById("newUsername").value = "";
             document.getElementById("newPassword").value = "";
             loadStats();
         })
-        .catch(() => alert("Registration failed! Username may already exist."));
+        .catch(() => alert("Failed! Username may already exist."));
     }
 
     function loadUsers() {
@@ -131,9 +144,8 @@
             tb.innerHTML = "";
             users.forEach(u => {
                 tb.innerHTML += `<tr>
-                    <td>${u.id}</td>
-                    <td>${u.username}</td>
-                    <td><span class="badge ${u.role === 'ADMIN' ? 'badge-admin' : 'badge-user'}">${u.role}</span></td>
+                    <td>${u.id}</td><td>${u.username}</td>
+                    <td><span class="badge ${u.role==='ADMIN'?'badge-admin':'badge-user'}">${u.role}</span></td>
                     <td><button class="btn-del" onclick="deleteUser(${u.id})">Delete</button></td>
                 </tr>`;
             });
@@ -152,13 +164,17 @@
             const tb = document.getElementById("gamesTable");
             tb.innerHTML = "";
             games.forEach(g => {
+                const statusClass = g.status === 'Ongoing' ? 'badge-ongoing'
+                                  : g.status === 'White Won' ? 'badge-white'
+                                  : g.status === 'Black Won' ? 'badge-black'
+                                  : 'badge-draw';
                 tb.innerHTML += `<tr>
                     <td>${g.id}</td>
                     <td>${g.playerWhite ? g.playerWhite.username : '-'}</td>
                     <td>${g.playerBlack ? g.playerBlack.username : '-'}</td>
-                    <td><span class="badge badge-ongoing">${g.status}</span></td>
+                    <td><span class="badge ${statusClass}">${g.status}</span></td>
                     <td>${g.currentTurn}</td>
-                    <td>${g.createdAt ? g.createdAt.substring(0, 10) : '-'}</td>
+                    <td>${g.createdAt ? g.createdAt.substring(0,10) : '-'}</td>
                     <td><button class="btn-del" onclick="deleteGame(${g.id})">Delete</button></td>
                 </tr>`;
             });
@@ -177,16 +193,14 @@
             const tb = document.getElementById("ratingsTable");
             tb.innerHTML = "";
             ratings.forEach((r, i) => {
-                const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
-                const medal     = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+                const rankClass = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
+                const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
                 tb.innerHTML += `<tr class="${rankClass}">
                     <td>${medal}</td>
                     <td>${r.user ? r.user.username : '-'}</td>
                     <td><strong>${r.rating}</strong></td>
-                    <td>${r.wins}</td>
-                    <td>${r.losses}</td>
-                    <td>${r.draws}</td>
-                    <td>${r.gamesPlayed}</td>
+                    <td>${r.wins}</td><td>${r.losses}</td>
+                    <td>${r.draws}</td><td>${r.gamesPlayed}</td>
                 </tr>`;
             });
         }).catch(() => {
@@ -195,6 +209,5 @@
         });
     }
 </script>
-
 </body>
 </html>

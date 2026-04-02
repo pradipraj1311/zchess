@@ -1,5 +1,6 @@
 package com.zchess.engine;
 
+
 public class GameState {
 
     // keeps track of current turn

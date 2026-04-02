@@ -1,5 +1,6 @@
 package com.zchess.engine;
 
+
 public class ChessNotation {
 
     public static String convert(String piece, int fr, int fc, int tr, int tc, boolean capture) {

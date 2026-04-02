@@ -2,10 +2,13 @@ package com.zchess.controller;
 
 import java.util.List;
 
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.zchess.entity.Rating;
 import com.zchess.service.RatingService;
@@ -20,13 +23,12 @@ public class RatingController {
         this.ratingService = ratingService;
     }
 
-    // leaderboard
     @GetMapping
     public List<Rating> getAllRatings() {
         return ratingService.getAllRatings();
     }
 
-    // potani rating
+   
     @GetMapping("/me")
     public ResponseEntity<?> getMyRating(Authentication auth) {
         return ResponseEntity.ok(ratingService.getRatingByUsername(auth.getName()));
@@ -48,8 +50,7 @@ public class RatingController {
         ratingService.updateRatings(whitePlayer, blackPlayer, score);
         return ResponseEntity.ok("Ratings updated successfully");
     }
-    // solo update - white player vs local black (no account)
-    // result: "white" | "black" | "draw"
+   
     @PostMapping("/update-solo")
     public ResponseEntity<?> updateSoloRating(
             @RequestParam String username,

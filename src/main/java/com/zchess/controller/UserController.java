@@ -1,12 +1,21 @@
 package com.zchess.controller;
 
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.zchess.entity.User;
 import com.zchess.service.UserService;
-
-import org.springframework.web.bind.annotation.*;
-import org.springframework.security.crypto.password.PasswordEncoder;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -16,49 +25,89 @@ public class UserController {
     private final PasswordEncoder passwordEncoder;
 
     public UserController(UserService userService, PasswordEncoder passwordEncoder) {
-        this.userService = userService;
+        this.userService     = userService;
         this.passwordEncoder = passwordEncoder;
     }
 
-    // register user
+ 
     @PostMapping("/register")
-    public User registerUser(@RequestBody User user) {
-        return userService.registerUser(user);
+    public ResponseEntity<?> registerUser(@RequestBody User user) {
+        try {
+            User saved = userService.registerUser(user);
+            // don't return password hash
+            saved.setPassword("[PROTECTED]");
+            return ResponseEntity.ok(saved);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Registration failed: " + e.getMessage());
+        }
     }
 
-    // login user
+    // LOGIN - verify credentials
     @PostMapping("/login")
-    public User login(@RequestBody User user) {
-
+    public ResponseEntity<?> login(@RequestBody User user, Authentication auth) {
         User dbUser = userService.findByUsername(user.getUsername());
-
         if (dbUser == null) {
-            throw new RuntimeException("User not found");
+            return ResponseEntity.status(401).body("User not found");
         }
-
         if (!passwordEncoder.matches(user.getPassword(), dbUser.getPassword())) {
-            throw new RuntimeException("Invalid password");
+            return ResponseEntity.status(401).body("Invalid password");
+        }
+        dbUser.setPassword("[PROTECTED]");
+        return ResponseEntity.ok(dbUser);
+    }
+
+    // GET ALL USERS - ADMIN ONLY
+    @GetMapping
+    public ResponseEntity<?> getAllUsers(Authentication auth) {
+        boolean isAdmin = auth.getAuthorities()
+                .contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        if (!isAdmin) {
+            return ResponseEntity.status(403)
+                    .body("Access denied. Admins only can view all users.");
+        }
+        List<User> users = userService.getAllUsers();
+        // hide passwords
+        users.forEach(u -> u.setPassword("[PROTECTED]"));
+        return ResponseEntity.ok(users);
+    }
+
+    // GET USER BY ID - admin can see any, player can only see own profile
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getUser(@PathVariable Long id, Authentication auth) {
+        boolean isAdmin = auth.getAuthorities()
+                .contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
+
+        // find logged-in user
+        User loggedIn = userService.findByUsername(auth.getName());
+
+        if (!isAdmin && (loggedIn == null || !loggedIn.getId().equals(id))) {
+            return ResponseEntity.status(403)
+                    .body("Access denied. You can only view your own profile.");
         }
 
-        return dbUser;
+        User user = userService.getUser(id);
+        user.setPassword("[PROTECTED]");
+        return ResponseEntity.ok(user);
     }
 
-    // get all users
-    @GetMapping
-    public List<User> getAllUsers() {
-        return userService.getAllUsers();
+    // GET MY PROFILE - any logged-in user
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyProfile(Authentication auth) {
+        User user = userService.findByUsername(auth.getName());
+        if (user == null) return ResponseEntity.status(404).body("User not found");
+        user.setPassword("[PROTECTED]");
+        return ResponseEntity.ok(user);
     }
 
-    // get user by id
-    @GetMapping("/{id}")
-    public User getUser(@PathVariable Long id) {
-        return userService.getUser(id);
-    }
-
-    // delete user
+    // DELETE USER - ADMIN ONLY
     @DeleteMapping("/{id}")
-    public String deleteUser(@PathVariable Long id) {
+    public ResponseEntity<?> deleteUser(@PathVariable Long id, Authentication auth) {
+        boolean isAdmin = auth.getAuthorities()
+                .contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        if (!isAdmin) {
+            return ResponseEntity.status(403).body("Access denied. Admins only.");
+        }
         userService.deleteUser(id);
-        return "User deleted successfully";
+        return ResponseEntity.ok("User deleted successfully");
     }
 }

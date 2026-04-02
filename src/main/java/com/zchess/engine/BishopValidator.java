@@ -1,5 +1,6 @@
 package com.zchess.engine;
 
+
 public class BishopValidator {
 
     public static boolean isValid(String[][] board, int fr, int fc, int tr, int tc) {

@@ -10,13 +10,9 @@ public class Game {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    // playerWhite - User saathe linked (foreign key)
     @ManyToOne
     @JoinColumn(name = "player_white")
     private User playerWhite;
-
-    // playerBlack - User saathe linked (foreign key)
     @ManyToOne
     @JoinColumn(name = "player_black")
     private User playerBlack;

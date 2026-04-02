@@ -1,5 +1,6 @@
 package com.zchess.engine;
 
+
 public class MoveValidator {
 
     public static boolean isValidMove(String piece, int fr, int fc, int tr, int tc, String[][] board) {

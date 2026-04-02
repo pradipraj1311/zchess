@@ -17,11 +17,11 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
 
-                // allow register and login without auth
+             
                 .requestMatchers("/api/users/register").permitAll()
                 .requestMatchers("/api/users/login").permitAll()
 
-                // allow frontend files
+             
                 .requestMatchers(
                     "/",
                     "/chess.html",
@@ -31,13 +31,13 @@ public class SecurityConfig {
                     "/pieces/**"
                 ).permitAll()
 
-                // allow health check
+           
                 .requestMatchers("/api/health").permitAll()
 
-                // everything else needs login
+             
                 .anyRequest().authenticated()
             )
-            // basic auth for Postman testing
+          
             .httpBasic(httpBasic -> {});
 
         return http.build();

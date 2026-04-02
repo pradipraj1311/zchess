@@ -4,7 +4,7 @@ let gameId = null, selected = null, boardState = [];
 let currentUser = null, authHeader = null;
 let whiteTime = 600, blackTime = 600;
 let timerInterval = null, activeTurn = 'white', gameOver = false;
-let SQ = 64; // square size in px - calculated on init
+let SQ = 64;
 
 /* ================= SCREEN ================= */
 function showScreen(id) {
@@ -17,46 +17,36 @@ function selectRole(r) { showScreen(r === 'admin' ? 'adminLoginScreen' : 'player
 
 /* ================= BOARD SIZE ================= */
 function calcBoardSize() {
-    // available space: viewport minus top bar (~58px) minus padding (32px) minus labels (~30px)
-    const topBar  = document.querySelector('.top-bar')?.offsetHeight || 58;
-    const availH  = window.innerHeight - topBar - 60;  // 60 = padding + labels
-    const availW  = window.innerWidth  - 300 - 80;     // 300 = side panel, 80 = gaps+rank col
-    const maxSide = Math.min(availH, availW, 640);
-    SQ = Math.floor(maxSide / 8);
-    if (SQ < 40) SQ = 40;
-    if (SQ > 88) SQ = 88;
-
-    // set CSS variable
-    document.documentElement.style.setProperty('--sq', SQ + 'px');
+    const topBar = document.querySelector('.top-bar')?.offsetHeight || 58;
+    const turnH  = document.querySelector('.turn-banner')?.offsetHeight || 44;
+    const availH = window.innerHeight - topBar - turnH - 80;
+    const availW = window.innerWidth  - 300 - 80;
+    const maxSide = Math.min(availH, availW, 660);
+    SQ = Math.max(40, Math.min(88, Math.floor(maxSide / 8)));
     document.getElementById('board').style.width  = (SQ * 8) + 'px';
     document.getElementById('board').style.height = (SQ * 8) + 'px';
 }
-
-window.addEventListener('resize', () => { calcBoardSize(); buildCoordinates(); });
+window.addEventListener('resize', () => { calcBoardSize(); buildCoords(); });
 
 /* ================= COORDINATES ================= */
-function buildCoordinates() {
-    // Rank labels 8→1 on left
-    const rankCol = document.getElementById('rankCol');
-    rankCol.innerHTML = '';
+function buildCoords() {
+    const rc = document.getElementById('rankCol');
+    rc.innerHTML = '';
     ['8','7','6','5','4','3','2','1'].forEach(r => {
         const el = document.createElement('div');
         el.className = 'rank-lbl';
-        el.style.height = SQ + 'px';
-        el.style.width  = '20px';
+        el.style.cssText = `height:${SQ}px;width:20px;`;
         el.innerText = r;
-        rankCol.appendChild(el);
+        rc.appendChild(el);
     });
-
-    // File labels a→h on bottom
-    const fileRow = document.getElementById('fileRow');
-    fileRow.innerHTML = '';
+    const fr = document.getElementById('fileRow');
+    fr.innerHTML = '';
     ['a','b','c','d','e','f','g','h'].forEach(f => {
         const el = document.createElement('div');
         el.className = 'file-lbl';
-        el.style.width = SQ + 'px';
+        el.style.cssText = `width:${SQ}px;`;
         el.innerText = f;
-        fileRow.appendChild(el);
+        fr.appendChild(el);
     });
 }
 
@@ -110,13 +100,7 @@ function login() {
         document.getElementById('whiteTimer').innerText = '10:00';
         document.getElementById('blackTimer').innerText = '10:00';
         showScreen('gameScreen');
-        // calculate board size AFTER screen is visible
-        setTimeout(() => {
-            calcBoardSize();
-            buildCoordinates();
-            loadRating();
-            createGame();
-        }, 30);
+        setTimeout(() => { calcBoardSize(); buildCoords(); loadRating(); createGame(); }, 50);
     })
     .catch(() => alert('Login failed! Check credentials.'));
 }
@@ -147,8 +131,7 @@ function loadRating() {
 /* ================= GAME ================= */
 function createGame() {
     fetch('/api/games', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader }
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': authHeader }
     })
     .then(r => { if (!r.ok) throw new Error(); return r.json(); })
     .then(game => { gameId = game.id; gameOver = false; initGame(); startTimer(); })
@@ -157,7 +140,7 @@ function createGame() {
 
 function initGame() { if (!gameId) return; loadBoard(); loadHistory(); loadTurn(); }
 
-/* ================= DRAW BOARD ================= */
+/* ================= BOARD ================= */
 function loadBoard() {
     fetch(`/api/games/${gameId}/board`, { headers: { 'Authorization': authHeader } })
     .then(r => r.json())
@@ -166,20 +149,16 @@ function loadBoard() {
 
 function drawBoard(board) {
     const container = document.getElementById('board');
-    // IMPORTANT: set explicit size before adding children - prevents reflow
     container.style.width  = (SQ * 8) + 'px';
     container.style.height = (SQ * 8) + 'px';
     container.innerHTML = '';
-
     const frag = document.createDocumentFragment();
     for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
             const sq = document.createElement('div');
             sq.className = 'square ' + ((r + c) % 2 === 0 ? 'light' : 'dark');
-            // FIXED dimensions - no CSS variable needed on square itself
             sq.style.cssText = `width:${SQ}px;height:${SQ}px;`;
             sq.onclick = () => clickSquare(r, c);
-
             const piece = board[r][c];
             if (piece) {
                 const img = document.createElement('img');
@@ -199,35 +178,34 @@ function clickSquare(r, c) {
     const piece = boardState[r][c];
     if (!selected) {
         if (!piece) return;
-        selected = { r, c }; applyHighlights(r, c);
+        selected = { r, c }; applyHL(r, c);
     } else {
         if (selected.r === r && selected.c === c) { selected = null; clearHL(); return; }
         const cur = boardState[selected.r][selected.c];
-        if (piece && cur && piece[0] === cur[0]) { selected = { r, c }; applyHighlights(r, c); return; }
+        if (piece && cur && piece[0] === cur[0]) { selected = { r, c }; applyHL(r, c); return; }
         doMove(selected.r, selected.c, r, c);
         selected = null; clearHL();
     }
 }
 
 /* ================= HIGHLIGHT ================= */
-function applyHighlights(r, c) {
+function applyHL(r, c) {
     clearHL();
-    const squares = document.querySelectorAll('.square');
+    const sqs = document.querySelectorAll('.square');
     const piece = boardState[r][c];
     if (!piece) return;
-    squares[r * 8 + c].classList.add('selected');
-    getPossibleMoves(piece, r, c, piece[0]).forEach(([mr, mc]) => {
-        const sq = squares[mr * 8 + mc];
+    sqs[r * 8 + c].classList.add('selected');
+    getMoves(piece, r, c, piece[0]).forEach(([mr, mc]) => {
+        const sq = sqs[mr * 8 + mc];
         if (boardState[mr][mc]) sq.classList.add('capture-ring');
-        else                     sq.classList.add('dot');
+        else sq.classList.add('dot');
     });
 }
-
 function clearHL() {
     document.querySelectorAll('.square').forEach(s => s.classList.remove('selected','dot','capture-ring'));
 }
 
-function getPossibleMoves(piece, r, c, color) {
+function getMoves(piece, r, c, color) {
     const m = [];
     switch(piece[1]) {
         case 'p': addPawn(m,r,c,color); break;
@@ -242,7 +220,21 @@ function getPossibleMoves(piece, r, c, color) {
 function addPawn(m,r,c,col){const d=col==='w'?-1:1,s=col==='w'?6:1;if(inB(r+d,c)&&!boardState[r+d][c]){m.push([r+d,c]);if(r===s&&!boardState[r+2*d][c])m.push([r+2*d,c]);}for(const dc of[-1,1])if(inB(r+d,c+dc)&&boardState[r+d][c+dc]&&boardState[r+d][c+dc][0]!==col)m.push([r+d,c+dc]);}
 function addKnight(m,r,c,col){for(const[dr,dc]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]])if(inB(r+dr,c+dc)&&(!boardState[r+dr][c+dc]||boardState[r+dr][c+dc][0]!==col))m.push([r+dr,c+dc]);}
 function addSlide(m,r,c,col,dirs){for(const[dr,dc]of dirs){let nr=r+dr,nc=c+dc;while(inB(nr,nc)){if(!boardState[nr][nc]){m.push([nr,nc]);}else{if(boardState[nr][nc][0]!==col)m.push([nr,nc]);break;}nr+=dr;nc+=dc;}}}
-function addKing(m,r,c,col){for(const[dr,dc]of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]])if(inB(r+dr,c+dc)&&(!boardState[r+dr][c+dc]||boardState[r+dr][c+dc][0]!==col))m.push([r+dr,c+dc]);}
+function addKing(m,r,c,col){
+    // normal moves
+    for(const[dr,dc]of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]])
+        if(inB(r+dr,c+dc)&&(!boardState[r+dr][c+dc]||boardState[r+dr][c+dc][0]!==col))
+            m.push([r+dr,c+dc]);
+    // castling hints (backend validates)
+    if(col==='w'&&r===7&&c===4){
+        if(!boardState[7][5]&&!boardState[7][6]) m.push([7,6]); // kingside
+        if(!boardState[7][3]&&!boardState[7][2]&&!boardState[7][1]) m.push([7,2]); // queenside
+    }
+    if(col==='b'&&r===0&&c===4){
+        if(!boardState[0][5]&&!boardState[0][6]) m.push([0,6]);
+        if(!boardState[0][3]&&!boardState[0][2]&&!boardState[0][1]) m.push([0,2]);
+    }
+}
 function inB(r,c){return r>=0&&r<8&&c>=0&&c<8;}
 
 /* ================= MOVE ================= */
@@ -252,28 +244,49 @@ function doMove(fr, fc, tr, tc) {
         headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
         body: JSON.stringify({ fromRow: fr, fromCol: fc, toRow: tr, toCol: tc })
     })
-    .then(r => {
-        if (!r.ok) return r.text().then(() => { throw new Error('INVALID'); });
-        return r.text();
-    })
-    .then(raw => {
-        const result = raw.replace(/['"]/g,'').trim();
-        // update board state directly from response - avoid full reload flicker
+    .then(r => r.json())  // backend now returns JSON always
+    .then(data => {
+        const status  = data.status  || '';
+        const message = data.message || '';
+
+        if (status.startsWith('INVALID')) {
+            // Show specific error message
+            showToast(message, 'error');
+            return;
+        }
+
         loadBoard(); loadHistory(); loadTurn(); switchTimer();
-        if (result === 'WHITE_WIN' || result === 'BLACK_WIN' || result === 'STALEMATE') {
-            gameOver = true; clearInterval(timerInterval);
-            showModal(result, '');
+
+        if (status === 'WHITE_WIN' || status === 'BLACK_WIN' || status === 'STALEMATE') {
+            gameOver = true;
+            clearInterval(timerInterval);
+            showModal(status, message);
         }
     })
-    .catch(err => { if (err.message === 'INVALID') alert('Invalid move!'); });
+    .catch(err => { console.error(err); showToast('Move failed!', 'error'); });
+}
+
+/* ================= TOAST (replaces alert) ================= */
+function showToast(msg, type) {
+    let toast = document.getElementById('toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast';
+        document.body.appendChild(toast);
+    }
+    toast.innerText = msg;
+    toast.className = 'toast ' + (type || '');
+    toast.style.display = 'block';
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => { toast.style.display = 'none'; }, 3000);
 }
 
 /* ================= MODAL ================= */
-function showModal(result, overrideMsg) {
-    let icon, title, msg;
-    if      (result==='WHITE_WIN') { icon='♔'; title='White Wins!'; msg=overrideMsg||'♔ White wins by Checkmate!'; updateRating('white'); }
-    else if (result==='BLACK_WIN') { icon='♚'; title='Black Wins!'; msg=overrideMsg||'♚ Black wins by Checkmate!'; updateRating('black'); }
-    else if (result==='STALEMATE') { icon='🤝'; title='Stalemate!'; msg=overrideMsg||"No legal moves — it's a draw!"; updateRating('draw'); }
+function showModal(status, msg) {
+    let icon, title;
+    if      (status==='WHITE_WIN') { icon='♔'; title='White Wins!'; updateRating('white'); }
+    else if (status==='BLACK_WIN') { icon='♚'; title='Black Wins!'; updateRating('black'); }
+    else if (status==='STALEMATE') { icon='🤝'; title='Stalemate!'; updateRating('draw'); }
     else return;
     document.getElementById('resultIcon').innerText  = icon;
     document.getElementById('resultTitle').innerText = title;
@@ -292,14 +305,14 @@ function updateRating(winner) {
         if (!data || data.newRating === undefined) return;
         const ch = data.ratingChange || 0;
         const el = document.getElementById('ratingChange');
-        el.innerText  = ch >= 0 ? `Rating: +${ch} ⭐` : `Rating: ${ch} ⭐`;
-        el.className  = 'rating-change' + (ch < 0 ? ' negative' : '');
+        el.innerText = ch >= 0 ? `Rating: +${ch} ⭐` : `Rating: ${ch} ⭐`;
+        el.className = 'rating-change' + (ch < 0 ? ' negative' : '');
         document.getElementById('ratingDisplay').innerText = data.newRating;
     })
     .catch(() => { document.getElementById('ratingChange').innerText = ''; });
 }
 
-/* ================= HISTORY & TURN ================= */
+/* ================= HISTORY ================= */
 function loadHistory() {
     ['white','black'].forEach(color => {
         fetch(`/api/games/${gameId}/history/${color}`, { headers: { 'Authorization': authHeader } })
@@ -312,17 +325,30 @@ function loadHistory() {
     });
 }
 
+/* ================= TURN ================= */
 function loadTurn() {
     fetch(`/api/games/${gameId}/turn`, { headers: { 'Authorization': authHeader } })
-    .then(r => r.text())
-    .then(raw => {
-        const turn = raw.replace(/['"]/g,'').trim();
-        activeTurn = turn;
-        document.getElementById('turn').innerText = 'Turn: ' + turn.charAt(0).toUpperCase() + turn.slice(1);
-        document.getElementById('whiteTimerRow').className = 'timer-row'+(turn==='white'?' active':'');
-        document.getElementById('blackTimerRow').className = 'timer-row'+(turn==='black'?' active':'');
-        document.getElementById('whiteLabel').className = 'player-label'+(turn==='white'?' active':'');
-        document.getElementById('blackLabel').className = 'player-label'+(turn==='black'?' active':'');
+    .then(r => r.json())
+    .then(data => {
+        // backend now returns {"turn": "white"} or {"turn": "black"}
+        const turn = data.turn || data;
+        activeTurn = typeof turn === 'string' ? turn : 'white';
+        const cap = activeTurn.charAt(0).toUpperCase() + activeTurn.slice(1);
+
+        // Turn banner above board
+        const banner = document.getElementById('turnBanner');
+        if (banner) {
+            banner.innerText = '● ' + cap + "'s Turn";
+            banner.className = 'turn-banner ' + (activeTurn === 'white' ? 'turn-white' : 'turn-black');
+        }
+
+        // Top bar turn
+        document.getElementById('turn').innerText = 'Turn: ' + cap;
+
+        document.getElementById('whiteTimerRow').className = 'timer-row'+(activeTurn==='white'?' active':'');
+        document.getElementById('blackTimerRow').className = 'timer-row'+(activeTurn==='black'?' active':'');
+        document.getElementById('whiteLabel').className = 'player-label'+(activeTurn==='white'?' active':'');
+        document.getElementById('blackLabel').className = 'player-label'+(activeTurn==='black'?' active':'');
     });
 }
 
@@ -335,12 +361,12 @@ function startTimer() {
             whiteTime--;
             document.getElementById('whiteTimer').innerText = fmt(whiteTime);
             if (whiteTime <= 30) document.getElementById('whiteTimerRow').classList.add('low');
-            if (whiteTime <= 0)  { clearInterval(timerInterval); handleTimeout('white'); }
+            if (whiteTime <= 0) { clearInterval(timerInterval); handleTimeout('white'); }
         } else {
             blackTime--;
             document.getElementById('blackTimer').innerText = fmt(blackTime);
             if (blackTime <= 30) document.getElementById('blackTimerRow').classList.add('low');
-            if (blackTime <= 0)  { clearInterval(timerInterval); handleTimeout('black'); }
+            if (blackTime <= 0) { clearInterval(timerInterval); handleTimeout('black'); }
         }
     }, 1000);
 }
@@ -350,11 +376,10 @@ function handleTimeout(loser) {
     const winner = loser === 'white' ? 'black' : 'white';
     fetch(`/api/games/${gameId}/timeout?loserColor=${loser}`, {
         method: 'POST', headers: { 'Authorization': authHeader }
-    }).then(() => {
-        const res = winner === 'white' ? 'WHITE_WIN' : 'BLACK_WIN';
-        const L = loser.charAt(0).toUpperCase()+loser.slice(1);
-        const W = winner.charAt(0).toUpperCase()+winner.slice(1);
-        showModal(res, `${L} ran out of time! ${W} wins!`);
+    })
+    .then(r => r.json())
+    .then(data => {
+        showModal(data.status || (winner==='white'?'WHITE_WIN':'BLACK_WIN'), data.message || '');
     });
 }
 
@@ -364,7 +389,7 @@ function fmt(s){return`${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).t
 /* ================= RESET & UNDO ================= */
 function resetGame() {
     clearInterval(timerInterval);
-    fetch(`/api/games/${gameId}/reset`, { method: 'POST', headers: { 'Authorization': authHeader } })
+    fetch(`/api/games/${gameId}/reset`, { method:'POST', headers:{'Authorization':authHeader} })
     .then(() => {
         gameOver=false; whiteTime=600; blackTime=600; activeTurn='white';
         document.getElementById('whiteTimer').innerText='10:00';

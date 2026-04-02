@@ -1,12 +1,21 @@
 package com.zchess.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
+import com.zchess.entity.Game;
 import com.zchess.entity.Move;
 import com.zchess.service.GameService;
 import com.zchess.service.MoveService;
@@ -23,12 +32,14 @@ public class GameController {
         this.gameService = gameService;
     }
 
-    // CREATE GAME
+    // CREATE GAME - reset board and set active game ID
     @PostMapping
     public ResponseEntity<?> createGame(Authentication auth) {
-        // reset board state for new game / new user
-        moveService.reset();
-        return ResponseEntity.ok(gameService.createGame(auth.getName()));
+        moveService.reset(); // clear old state
+        Game game = gameService.createGame(auth.getName());
+        moveService.setActiveGame(game.getId()); // tell MoveService which game is active
+        System.out.println("Game created: id=" + game.getId() + " user=" + auth.getName());
+        return ResponseEntity.ok(game);
     }
 
     // ALL GAMES - admin only
@@ -36,22 +47,23 @@ public class GameController {
     public ResponseEntity<?> getAllGames(Authentication auth) {
         boolean isAdmin = auth.getAuthorities()
                 .contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
-        if (!isAdmin) return ResponseEntity.status(403).body("Admins only");
+        if (!isAdmin) return ResponseEntity.status(403).body("Access denied. Admins only.");
         return ResponseEntity.ok(gameService.getAllGames());
     }
 
-    // MY GAMES
+    // MY GAMES - logged-in user's games
     @GetMapping("/my")
     public ResponseEntity<?> getMyGames(Authentication auth) {
         return ResponseEntity.ok(gameService.getGamesByUser(auth.getName()));
     }
 
+    // GET GAME BY ID
     @GetMapping("/{id}")
     public ResponseEntity<?> getGame(@PathVariable Long id) {
         return ResponseEntity.ok(gameService.getGame(id));
     }
 
-    // DELETE - admin only
+    // DELETE GAME - admin only
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteGame(@PathVariable Long id, Authentication auth) {
         boolean isAdmin = auth.getAuthorities()
@@ -61,62 +73,94 @@ public class GameController {
         return ResponseEntity.ok("Game deleted");
     }
 
-    // BOARD
+    // GET BOARD
     @GetMapping("/{id}/board")
-    public String[][] board(@PathVariable Long id) {
-        return moveService.getBoard();
+    public ResponseEntity<?> board(@PathVariable Long id) {
+        return ResponseEntity.ok(moveService.getBoard());
     }
 
-    // MOVE - returns OK | WHITE_WIN | BLACK_WIN | STALEMATE | INVALID(400)
+    // MAKE MOVE - returns JSON with status and message
     @PostMapping("/{id}/move")
     public ResponseEntity<?> move(@PathVariable Long id, @RequestBody Move move) {
         String result = moveService.move(id, move);
-        if (result.equals("INVALID")) {
-            return ResponseEntity.badRequest().body("INVALID");
+
+        switch (result) {
+            case "INVALID_NO_PIECE":
+                return ResponseEntity.badRequest()
+                        .body(Map.of("status","INVALID","message","No piece at selected square."));
+
+            case "INVALID_WRONG_TURN":
+                String turn = moveService.getTurn();
+                return ResponseEntity.badRequest()
+                        .body(Map.of("status","INVALID","message","It's "+turn+"'s turn, not yours!"));
+
+            case "INVALID_OWN_PIECE":
+                return ResponseEntity.badRequest()
+                        .body(Map.of("status","INVALID","message","Cannot capture your own piece."));
+
+            case "INVALID_ILLEGAL":
+                return ResponseEntity.badRequest()
+                        .body(Map.of("status","INVALID","message","Illegal move for this piece."));
+
+            case "INVALID_KING_IN_CHECK":
+                return ResponseEntity.badRequest()
+                        .body(Map.of("status","INVALID","message","Your king is in check! Resolve the check first."));
+
+            case "WHITE_WIN":
+                return ResponseEntity.ok(Map.of("status","WHITE_WIN","message","Checkmate! White wins!"));
+
+            case "BLACK_WIN":
+                return ResponseEntity.ok(Map.of("status","BLACK_WIN","message","Checkmate! Black wins!"));
+
+            case "STALEMATE":
+                return ResponseEntity.ok(Map.of("status","STALEMATE","message","Stalemate! Game is a draw."));
+
+            default: // OK
+                return ResponseEntity.ok(Map.of("status","OK","message","Move accepted."));
         }
-        return ResponseEntity.ok(result);
     }
 
-    // GAME RESULT
+    // GET RESULT
     @GetMapping("/{id}/result")
-    public String result(@PathVariable Long id) {
-        return moveService.getGameResult();
+    public ResponseEntity<?> result(@PathVariable Long id) {
+        return ResponseEntity.ok(Map.of("result", moveService.getGameResult()));
     }
 
     // TIMEOUT
     @PostMapping("/{id}/timeout")
-    public ResponseEntity<?> timeout(@PathVariable Long id,
-                                     @RequestParam String loserColor) {
+    public ResponseEntity<?> timeout(@PathVariable Long id, @RequestParam String loserColor) {
         String result = moveService.declareTimeout(id, loserColor);
-        return ResponseEntity.ok(result);
+        String winner = loserColor.equals("white") ? "Black" : "White";
+        return ResponseEntity.ok(Map.of(
+                "status",  result,
+                "message", loserColor + " ran out of time! " + winner + " wins!"
+        ));
     }
 
     // HISTORY
     @GetMapping("/{id}/history/white")
-    public List<String> getWhiteHistory(@PathVariable Long id) {
-        return moveService.getWhiteHistory();
-    }
+    public List<String> whiteHistory(@PathVariable Long id) { return moveService.getWhiteHistory(); }
 
     @GetMapping("/{id}/history/black")
-    public List<String> getBlackHistory(@PathVariable Long id) {
-        return moveService.getBlackHistory();
-    }
+    public List<String> blackHistory(@PathVariable Long id) { return moveService.getBlackHistory(); }
 
-    // TURN
+    // TURN - returns JSON
     @GetMapping("/{id}/turn")
-    public String turn(@PathVariable Long id) {
-        return moveService.getTurn();
+    public ResponseEntity<?> turn(@PathVariable Long id) {
+        return ResponseEntity.ok(Map.of("turn", moveService.getTurn()));
     }
 
     // RESET
     @PostMapping("/{id}/reset")
-    public void reset(@PathVariable Long id) {
+    public ResponseEntity<?> reset(@PathVariable Long id) {
         moveService.reset();
+        return ResponseEntity.ok(Map.of("message","Game reset successfully"));
     }
 
     // UNDO
     @PostMapping("/{id}/undo")
-    public void undo(@PathVariable Long id) {
+    public ResponseEntity<?> undo(@PathVariable Long id) {
         moveService.undo();
+        return ResponseEntity.ok(Map.of("message","Last move undone"));
     }
 }

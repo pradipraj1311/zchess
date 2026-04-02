@@ -1,5 +1,6 @@
 package com.zchess.engine;
 
+
 public class Board {
 
     // main chess board (8x8)
